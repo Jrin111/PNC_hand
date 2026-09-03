@@ -1,0 +1,201 @@
+{
+  "configById": {
+    "RawMessages!2qqfivu": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/dynamic_joint_states.joint_names[:]",
+      "fontSize": 12,
+      "defaultExpanded": false
+    },
+    "RawMessages!25aiikm": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/dynamic_joint_states.interface_values[:].values[1:1]",
+      "fontSize": 12,
+      "defaultExpanded": false
+    },
+    "RawMessages!4267txw": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/dynamic_joint_states.interface_values[:].values[2:2]",
+      "fontSize": 12,
+      "defaultExpanded": false
+    },
+    "Publish!3ve7a3k": {
+      "buttonText": "Publish Joint Positions",
+      "buttonTooltip": "",
+      "advancedView": true,
+      "value": "{\n  \"layout\": {\n    \"dim\": [\n      {\n        \"label\": \"\",\n        \"size\": 0,\n        \"stride\": 0\n      }\n    ],\n    \"data_offset\": 0\n  },\n  \"data\": [\n    1.6, 0.6, 0.0, 0.0, 1.4, 1.4\n  ]\n}",
+      "topicName": "/inspire_rh56e2_hand_joint_position_controller/commands",
+      "datatype": "std_msgs/msg/Float64MultiArray"
+    },
+    "Publish!t92695": {
+      "buttonText": "Publish Force Thresholds",
+      "buttonTooltip": "",
+      "advancedView": true,
+      "value": "{\n  \"layout\": {\n    \"dim\": [\n      {\n        \"label\": \"\",\n        \"size\": 0,\n        \"stride\": 0\n      }\n    ],\n    \"data_offset\": 0\n  },\n  \"data\": [\n    300, 300, 300, 300, 300, 300\n  ]\n}",
+      "topicName": "/inspire_rh56e2_hand_force_threshold_controller/commands",
+      "datatype": "std_msgs/msg/Float64MultiArray"
+    },
+    "Publish!49z8ibr": {
+      "buttonText": "Publish Gripper Command",
+      "buttonTooltip": "",
+      "advancedView": true,
+      "value": "{\n  \"position\": 0.02,\n  \"max_effort\": 0\n}",
+      "topicName": "/gripper_command",
+      "datatype": "control_msgs/msg/GripperCommand"
+    },
+    "3D!1cwjo33": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 0.7504827842222561,
+        "phi": 55.775828959015065,
+        "thetaOffset": -101.34551347625865,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.1,
+        "far": 5000
+      },
+      "followMode": "follow-none",
+      "scene": {
+        "meshUpAxis": "z_up",
+        "transforms": {
+          "editable": false,
+          "showLabel": false,
+          "labelSize": 0.06,
+          "lineWidth": 1,
+          "visible": false,
+          "axisSize": 0.05
+        },
+        "backgroundColor": "#272727"
+      },
+      "transforms": {
+        "frame:thumb_distal": {
+          "visible": true
+        },
+        "frame:thumb_force_sensor_3": {
+          "visible": true
+        },
+        "frame:thumb_force_sensor_4": {
+          "visible": true
+        }
+      },
+      "topics": {
+        "/robot_description": {
+          "visible": true
+        }
+      },
+      "layers": {
+        "grid": {
+          "visible": true,
+          "frameLocked": true,
+          "label": "Grid",
+          "instanceId": "f512ec82-367b-4004-a84d-17320938a01b",
+          "layerId": "foxglove.Grid",
+          "size": 10,
+          "divisions": 10,
+          "lineWidth": 1,
+          "color": "#248eff",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "7975a5bb-b268-4159-8b37-450138690126": {
+          "displayMode": "auto",
+          "fallbackColor": "#ffffff",
+          "showAxis": false,
+          "showOutlines": true,
+          "visible": true,
+          "frameLocked": true,
+          "instanceId": "7975a5bb-b268-4159-8b37-450138690126",
+          "label": "URDF",
+          "layerId": "foxglove.Urdf",
+          "sourceType": "topic",
+          "url": "",
+          "filePath": "",
+          "parameter": "",
+          "topic": "/robot_description",
+          "framePrefix": "",
+          "order": 1,
+          "links": {},
+          "axisScale": 1,
+          "opacity": 1
+        }
+      },
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {},
+      "followTf": "world",
+      "synchronize": false
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "direction": "row",
+    "first": {
+      "first": {
+        "first": "RawMessages!2qqfivu",
+        "second": {
+          "first": "RawMessages!25aiikm",
+          "second": "RawMessages!4267txw",
+          "direction": "row"
+        },
+        "direction": "row",
+        "splitPercentage": 34.08141490620617
+      },
+      "second": {
+        "first": "Publish!3ve7a3k",
+        "second": {
+          "first": "Publish!t92695",
+          "second": "Publish!49z8ibr",
+          "direction": "row"
+        },
+        "direction": "row",
+        "splitPercentage": 34.19694512622721
+      },
+      "direction": "column",
+      "splitPercentage": 48.09619238476954
+    },
+    "second": "3D!1cwjo33",
+    "splitPercentage": 58.802608180201545
+  }
+}

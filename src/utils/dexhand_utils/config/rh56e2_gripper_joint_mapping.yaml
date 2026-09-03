@@ -1,0 +1,56 @@
+# RH56E2 Gripper-to-Joint Mapping (multi-profile)
+# Built from calibrated single-profile templates in ros2_ws/config:
+#   rh56e2_gripper_joint_mapping_2finger.yaml -> pinch
+#   rh56e2_gripper_joint_mapping_3finger.yaml -> three_fingers
+#   rh56e2_gripper_joint_mapping_5finger.yaml -> full_hand
+#
+# joint_positions order: [thumb_yaw, thumb_pitch, index, middle, ring, pinky] (radians)
+# max_gripper_width per profile is taken from the last (widest) mapping entry.
+# Switch profiles at runtime by publishing the profile name on the `set_grasp_profile` topic.
+
+default_profile: full_hand
+profiles:
+  full_hand:
+    description: "5-finger power grasp; all five fingers participate (max_width 0.120m)"
+    mapping:
+      - {gripper_width: 0.000, joint_positions: [1.62, 0.27, 0.81, 0.76, 0.77, 0.80]} # fully closed
+      - {gripper_width: 0.001, joint_positions: [1.67, 0.23, 0.82, 0.78, 0.86, 0.85]} # 0.1cm
+      - {gripper_width: 0.010, joint_positions: [1.67, 0.19, 0.77, 0.74, 0.78, 0.84]} # 1cm
+      - {gripper_width: 0.020, joint_positions: [1.67, 0.15, 0.75, 0.70, 0.75, 0.83]} # 2cm
+      - {gripper_width: 0.030, joint_positions: [1.67, 0.11, 0.73, 0.69, 0.70, 0.80]} # 3cm
+      - {gripper_width: 0.040, joint_positions: [1.65, 0.08, 0.68, 0.62, 0.65, 0.75]} # 4cm
+      - {gripper_width: 0.050, joint_positions: [1.63, 0.04, 0.63, 0.58, 0.60, 0.70]} # 5cm
+      - {gripper_width: 0.060, joint_positions: [1.60, 0.02, 0.56, 0.51, 0.55, 0.65]} # 6cm
+      - {gripper_width: 0.070, joint_positions: [1.60, 0.02, 0.50, 0.45, 0.50, 0.60]} # 7cm
+      - {gripper_width: 0.090, joint_positions: [1.55, 0.01, 0.38, 0.33, 0.40, 0.50]} # 9cm
+      - {gripper_width: 0.110, joint_positions: [1.55, 0.01, 0.26, 0.21, 0.30, 0.40]} # 11cm
+      - {gripper_width: 0.120, joint_positions: [1.55, 0.01, 0.15, 0.10, 0.22, 0.32]} # 12cm
+
+  three_fingers:
+    description: "3-finger tripod grasp using thumb + index + middle; ring/pinky stay closed (max_width 0.120m)"
+    mapping:
+      - {gripper_width: 0.000, joint_positions: [1.57, 0.27, 0.79, 0.73, 1.43, 1.43]} # fully closed
+      - {gripper_width: 0.001, joint_positions: [1.57, 0.23, 0.79, 0.73, 1.43, 1.43]} # 0.1cm
+      - {gripper_width: 0.010, joint_positions: [1.57, 0.19, 0.73, 0.69, 1.43, 1.43]} # 1cm
+      - {gripper_width: 0.020, joint_positions: [1.57, 0.15, 0.67, 0.63, 1.43, 1.43]} # 2cm
+      - {gripper_width: 0.030, joint_positions: [1.57, 0.11, 0.61, 0.57, 1.43, 1.43]} # 3cm
+      - {gripper_width: 0.040, joint_positions: [1.57, 0.08, 0.55, 0.51, 1.43, 1.43]} # 4cm
+      - {gripper_width: 0.050, joint_positions: [1.57, 0.04, 0.49, 0.45, 1.43, 1.43]} # 5cm
+      - {gripper_width: 0.070, joint_positions: [1.57, 0.02, 0.33, 0.29, 1.43, 1.43]} # 7cm
+      - {gripper_width: 0.090, joint_positions: [1.57, 0.01, 0.27, 0.23, 1.43, 1.43]} # 9cm
+      - {gripper_width: 0.110, joint_positions: [1.57, 0.01, 0.15, 0.11, 1.43, 1.43]} # 11cm
+      - {gripper_width: 0.120, joint_positions: [1.57, 0.01, 0.09, 0.05, 1.43, 1.43]} # 12cm
+
+  pinch:
+    description: "2-finger parallel/pinch grasp using thumb + index; middle/ring/pinky stay closed (max_width 0.100m)"
+    mapping:
+      - {gripper_width: 0.000, joint_positions: [1.48, 0.31, 0.73, 1.43, 1.43, 1.43]} # fully closed
+      - {gripper_width: 0.001, joint_positions: [1.48, 0.32, 0.73, 1.43, 1.43, 1.43]} # 0.1cm
+      - {gripper_width: 0.010, joint_positions: [1.48, 0.28, 0.70, 1.43, 1.43, 1.43]} # 1cm
+      - {gripper_width: 0.020, joint_positions: [1.48, 0.24, 0.67, 1.43, 1.43, 1.43]} # 2cm
+      - {gripper_width: 0.030, joint_positions: [1.48, 0.20, 0.64, 1.43, 1.43, 1.43]} # 3cm
+      - {gripper_width: 0.040, joint_positions: [1.48, 0.16, 0.61, 1.43, 1.43, 1.43]} # 4cm
+      - {gripper_width: 0.050, joint_positions: [1.48, 0.12, 0.58, 1.43, 1.43, 1.43]} # 5cm
+      - {gripper_width: 0.060, joint_positions: [1.48, 0.08, 0.55, 1.43, 1.43, 1.43]} # 6cm
+      - {gripper_width: 0.080, joint_positions: [1.48, 0.01, 0.49, 1.43, 1.43, 1.43]} # 8cm
+      - {gripper_width: 0.100, joint_positions: [1.48, 0.00, 0.43, 1.43, 1.43, 1.43]} # 10cm

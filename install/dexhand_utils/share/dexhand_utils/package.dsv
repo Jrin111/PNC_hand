@@ -1,0 +1,8 @@
+source;share/dexhand_utils/hook/cmake_prefix_path.ps1
+source;share/dexhand_utils/hook/cmake_prefix_path.dsv
+source;share/dexhand_utils/hook/cmake_prefix_path.sh
+source;share/dexhand_utils/local_setup.bash
+source;share/dexhand_utils/local_setup.dsv
+source;share/dexhand_utils/local_setup.ps1
+source;share/dexhand_utils/local_setup.sh
+source;share/dexhand_utils/local_setup.zsh

@@ -1,0 +1,54 @@
+# RH56 Gripper-to-Joint Mapping (multi-profile)
+# Built from the calibrated single-profile templates in this directory:
+#   rh56_gripper_joint_mapping_2finger.yaml -> pinch
+#   rh56_gripper_joint_mapping_3finger.yaml -> three_fingers
+#   rh56_gripper_joint_mapping_5finger.yaml -> full_hand
+#
+# joint_positions order: [thumb_yaw, thumb_pitch, index, middle, ring, pinky] (radians)
+# Joint ranges (radians, 0 = open, positive = flexion/closure):
+#   thumb_proximal_yaw_joint:   0.0 - 1.308
+#   thumb_proximal_pitch_joint: 0.0 - 0.6
+#   index/middle/ring/pinky_proximal_joint: 0.0 - 1.47
+#
+# max_gripper_width per profile is taken from the last (widest) mapping entry.
+# Switch profiles at runtime by publishing the profile name on the `set_grasp_profile` topic.
+
+default_profile: full_hand
+profiles:
+  full_hand:
+    description: "5-finger power grasp; all five fingers close simultaneously, thumb yaw rotates inward to oppose (max_width 0.080m)"
+    mapping:
+      - {gripper_width: 0.000, joint_positions: [1.31, 0.60, 1.47, 1.47, 1.47, 1.47]} # fully closed
+      - {gripper_width: 0.001, joint_positions: [1.24, 0.53, 1.31, 1.31, 1.31, 1.31]} # 0.1cm
+      - {gripper_width: 0.010, joint_positions: [1.14, 0.46, 1.16, 1.16, 1.16, 1.16]} # 1cm
+      - {gripper_width: 0.020, joint_positions: [1.04, 0.39, 1.01, 1.01, 1.01, 1.01]} # 2cm
+      - {gripper_width: 0.030, joint_positions: [0.93, 0.32, 0.86, 0.86, 0.86, 0.86]} # 3cm
+      - {gripper_width: 0.040, joint_positions: [0.82, 0.24, 0.72, 0.72, 0.72, 0.72]} # 4cm
+      - {gripper_width: 0.050, joint_positions: [0.69, 0.17, 0.57, 0.57, 0.57, 0.57]} # 5cm
+      - {gripper_width: 0.060, joint_positions: [0.55, 0.10, 0.43, 0.43, 0.43, 0.43]} # 6cm
+      - {gripper_width: 0.070, joint_positions: [0.35, 0.05, 0.22, 0.22, 0.22, 0.22]} # 7cm
+      - {gripper_width: 0.080, joint_positions: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00]} # 8cm
+
+  three_fingers:
+    description: "3-finger tripod grasp using thumb + index + middle; ring/pinky stay closed (max_width 0.060m)"
+    mapping:
+      - {gripper_width: 0.000, joint_positions: [0.000, 0.50, 1.47, 1.47, 1.47, 1.47]} # fully closed
+      - {gripper_width: 0.001, joint_positions: [1.31, 0.20, 1.08, 0.85, 1.47, 1.47]} # 0.1cm
+      - {gripper_width: 0.010, joint_positions: [1.31, 0.15, 1.03, 0.80, 1.47, 1.47]} # 1cm
+      - {gripper_width: 0.020, joint_positions: [1.31, 0.11, 0.99, 0.75, 1.47, 1.47]} # 2cm
+      - {gripper_width: 0.030, joint_positions: [1.31, 0.08, 0.94, 0.70, 1.47, 1.47]} # 3cm
+      - {gripper_width: 0.040, joint_positions: [1.31, 0.05, 0.89, 0.65, 1.47, 1.47]} # 4cm
+      - {gripper_width: 0.050, joint_positions: [1.31, 0.02, 0.84, 0.58, 1.47, 1.47]} # 5cm
+      - {gripper_width: 0.060, joint_positions: [1.31, 0.00, 0.78, 0.50, 1.47, 1.47]} # 6cm
+
+  pinch:
+    description: "2-finger parallel/pinch grasp using thumb + index; middle/ring/pinky stay closed (max_width 0.060m)"
+    mapping:
+      - {gripper_width: 0.000, joint_positions: [0.000, 0.50, 1.47, 1.47, 1.47, 1.47]} # fully closed
+      - {gripper_width: 0.001, joint_positions: [1.20, 0.20, 1.08, 1.47, 1.47, 1.47]} # 0.1cm
+      - {gripper_width: 0.010, joint_positions: [1.20, 0.15, 1.03, 1.47, 1.47, 1.47]} # 1cm
+      - {gripper_width: 0.020, joint_positions: [1.20, 0.11, 0.99, 1.47, 1.47, 1.47]} # 2cm
+      - {gripper_width: 0.030, joint_positions: [1.20, 0.08, 0.94, 1.47, 1.47, 1.47]} # 3cm
+      - {gripper_width: 0.040, joint_positions: [1.20, 0.05, 0.89, 1.47, 1.47, 1.47]} # 4cm
+      - {gripper_width: 0.050, joint_positions: [1.20, 0.02, 0.84, 1.47, 1.47, 1.47]} # 5cm
+      - {gripper_width: 0.060, joint_positions: [1.20, 0.00, 0.78, 1.47, 1.47, 1.47]} # 6cm
