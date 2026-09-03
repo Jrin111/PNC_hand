@@ -1,0 +1,50 @@
+diff --git a/arch/arm64/boot/dts/renesas/rzv2h-rdk-ver1.dts b/arch/arm64/boot/dts/renesas/rzv2h-rdk-ver1.dts
+index c998121b4..7405a63d6 100644
+--- a/arch/arm64/boot/dts/renesas/rzv2h-rdk-ver1.dts
++++ b/arch/arm64/boot/dts/renesas/rzv2h-rdk-ver1.dts
+@@ -186,16 +186,17 @@ vmmc_sdhi0: regulator-vcc-sdhi0 {
+     };
+ 
+     vccq_sdhi0: regulator-vccq-sdhi0 {
+-        compatible = "regulator-gpio";
++        /*
++         * The WS125 board fixes VDD1833_SD0 at 1.8 V.  PA0 is routed to
++         * pin 29 of the 40-pin expansion header and is available as GPIO.
++         */
++        compatible = "regulator-fixed";
+ 
+         regulator-name = "SDHI0 VccQ";
+         regulator-min-microvolt = <1800000>;
+-        regulator-max-microvolt = <3300000>;
+-
+-        gpios = <&pinctrl RZV2H_GPIO(A, 0) GPIO_ACTIVE_HIGH>;
+-
+-        gpios-states = <0>;
+-        states = <3300000 0 1800000 1>;
++        regulator-max-microvolt = <1800000>;
++        regulator-boot-on;
++        regulator-always-on;
+     };
+ 
+     hdmi-out {
+@@ -338,9 +339,7 @@ i2c8_pins: i2c8 {
+     master_spi0_pins: master_spi0 {
+         pinmux = <RZV2H_PORT_PINMUX(9, 0, 1)>, /* MOSIA */
+              <RZV2H_PORT_PINMUX(9, 1, 1)>,     /* MISOA */
+-             <RZV2H_PORT_PINMUX(9, 2, 1)>,     /* RSPCKA */
+-             <RZV2H_PORT_PINMUX(9, 3, 1)>,     /* SSLA0 */
+-             <RZV2H_PORT_PINMUX(9, 4, 1)>;     /* SSLA1 */
++             <RZV2H_PORT_PINMUX(9, 2, 1)>;     /* RSPCKA */
+     };
+ 
+     usb30_pins: usb30 {
+@@ -600,7 +599,8 @@ &gpt0_0 {
+     pinctrl-0 = <&gpt0_0_pins>;
+     pinctrl-names = "default";
+     channel = "both_AB";
+-    status = "okay";
++    /* P70 and P71 are used as GPIO chip selects for RAA2S4704. */
++    status = "disabled";
+ };
+ 
+ &gpu {
