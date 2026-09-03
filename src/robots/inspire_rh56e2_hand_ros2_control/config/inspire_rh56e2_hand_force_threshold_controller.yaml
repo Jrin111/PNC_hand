@@ -1,0 +1,17 @@
+# Force Threshold Controller Configuration for Inspire RH56E2 Hand
+# This controller provides direct force threshold commands (grams) to all hand joints
+# via ForwardCommandController, allowing dynamic grip force limiting per finger.
+
+inspire_rh56e2_hand_force_threshold_controller:
+  ros__parameters:
+    # Joint specification
+    joints:
+      - thumb_proximal_yaw_joint     # Thumb yaw
+      - thumb_proximal_pitch_joint   # Thumb pitch/flex
+      - index_proximal_joint         # Index finger flex
+      - middle_proximal_joint        # Middle finger flex
+      - ring_proximal_joint          # Ring finger flex
+      - pinky_proximal_joint         # Pinky finger flex
+
+    # Interface configuration
+    interface_name: force_threshold

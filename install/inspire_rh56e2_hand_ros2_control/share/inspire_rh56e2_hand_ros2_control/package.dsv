@@ -1,0 +1,11 @@
+source;share/inspire_rh56e2_hand_ros2_control/hook/cmake_prefix_path.ps1
+source;share/inspire_rh56e2_hand_ros2_control/hook/cmake_prefix_path.dsv
+source;share/inspire_rh56e2_hand_ros2_control/hook/cmake_prefix_path.sh
+source;share/inspire_rh56e2_hand_ros2_control/hook/ld_library_path_lib.ps1
+source;share/inspire_rh56e2_hand_ros2_control/hook/ld_library_path_lib.dsv
+source;share/inspire_rh56e2_hand_ros2_control/hook/ld_library_path_lib.sh
+source;share/inspire_rh56e2_hand_ros2_control/local_setup.bash
+source;share/inspire_rh56e2_hand_ros2_control/local_setup.dsv
+source;share/inspire_rh56e2_hand_ros2_control/local_setup.ps1
+source;share/inspire_rh56e2_hand_ros2_control/local_setup.sh
+source;share/inspire_rh56e2_hand_ros2_control/local_setup.zsh

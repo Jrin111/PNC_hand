@@ -1,0 +1,2 @@
+source;share/ssc_tactile_hand_bringup/environment/ament_prefix_path.sh
+source;share/ssc_tactile_hand_bringup/environment/path.sh

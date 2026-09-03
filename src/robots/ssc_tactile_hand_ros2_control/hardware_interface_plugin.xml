@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<library path="ssc_tactile_hand_ros2_control_hardware_interface">
+  <class
+    name="ssc_tactile_hand_ros2_control/SscTactileHandHardwareInterface"
+    type="ssc_tactile_hand_ros2_control::SscTactileHandHardwareInterface"
+    base_class_type="hardware_interface::SensorInterface">
+    <description>
+      SensorInterface for nine RAA2S4704 devices on one Linux SPI bus with GPIO chip-select lines.
+    </description>
+  </class>
+</library>

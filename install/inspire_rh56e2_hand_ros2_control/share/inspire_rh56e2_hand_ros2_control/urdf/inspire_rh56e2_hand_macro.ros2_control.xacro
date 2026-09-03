@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    ROS 2 Control macro for Inspire RH56E2 Hand
+    This macro adds ros2_control tags to the robot description
+    Supports both real hardware and mock hardware configurations
+  -->
+
+  <xacro:macro name="inspire_rh56e2_hand_ros2_control" params="
+    name:=inspire_rh56e2_hand
+    serial_port:=/dev/ttyUSB0
+    baudrate:=115200
+    hand_speed:=1000
+    use_mock_hardware:=false
+    prefix:=''
+    ">
+
+    <ros2_control name="${prefix}${name}" type="system" rw_rate="50">
+
+      <!-- Hardware interface plugin chosen conditionally -->
+      <hardware>
+        <xacro:if value="${use_mock_hardware}">
+          <plugin>mock_components/GenericSystem</plugin>
+          <param name="position_state_following_offset">0.0</param>
+        </xacro:if>
+        <xacro:unless value="${use_mock_hardware}">
+          <plugin>inspire_rh56e2_hand_ros2_control/InspireRH56E2HandHardwareInterface</plugin>
+          <param name="serial_port">${serial_port}</param>
+          <param name="baudrate">${baudrate}</param>
+          <param name="hand_speed">${hand_speed}</param>
+        </xacro:unless>
+      </hardware>
+
+      <!-- Joint definitions -->
+      <!-- Thumb joints -->
+      <joint name="${prefix}thumb_proximal_yaw_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">1.658</param>
+        </command_interface>
+        <command_interface name="force_threshold"/>
+        <command_interface name="motion_mode"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="force"/>
+      </joint>
+
+      <joint name="${prefix}thumb_proximal_pitch_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">0.62</param>
+        </command_interface>
+        <command_interface name="force_threshold"/>
+        <command_interface name="motion_mode"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="force"/>
+      </joint>
+
+      <!-- Four finger joints -->
+      <joint name="${prefix}index_proximal_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">1.4381</param>
+        </command_interface>
+        <command_interface name="force_threshold"/>
+        <command_interface name="motion_mode"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="force"/>
+      </joint>
+
+      <joint name="${prefix}middle_proximal_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">1.4381</param>
+        </command_interface>
+        <command_interface name="force_threshold"/>
+        <command_interface name="motion_mode"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="force"/>
+      </joint>
+
+      <joint name="${prefix}ring_proximal_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">1.4381</param>
+        </command_interface>
+        <command_interface name="force_threshold"/>
+        <command_interface name="motion_mode"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="force"/>
+      </joint>
+
+      <joint name="${prefix}pinky_proximal_joint">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">1.4381</param>
+        </command_interface>
+        <command_interface name="force_threshold"/>
+        <command_interface name="motion_mode"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="force"/>
+      </joint>
+
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

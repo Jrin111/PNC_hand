@@ -1,0 +1,311 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ssc_tactile_hand">
+
+  <xacro:arg name="spi_device" default="/dev/spidev1.0"/>
+  <xacro:arg name="spi_speed_hz" default="1500000"/>
+  <xacro:arg name="spi_mode" default="0"/>
+  <xacro:arg name="bits_per_word" default="8"/>
+  <xacro:arg name="gpio_chip" default="/dev/gpiochip1"/>
+  <xacro:arg name="cs_lines" default="87,80,56,60,43,68,57,61,62"/>
+  <xacro:arg name="active_devices" default="9"/>
+  <xacro:arg name="channels_per_device" default="6"/>
+  <xacro:arg name="auto_tare" default="true"/>
+  <xacro:arg name="ema_shift" default="2"/>
+  <xacro:arg name="measurement_wait_us" default="145"/>
+  <xacro:arg name="response_check" default="strict"/>
+  <xacro:arg name="max_consecutive_failures" default="3"/>
+  <xacro:arg name="recovery_interval_frames" default="40"/>
+
+  <link name="tactile_hand_base"/>
+
+  <ros2_control name="ssc_tactile_hand" type="sensor">
+    <hardware>
+      <plugin>ssc_tactile_hand_ros2_control/SscTactileHandHardwareInterface</plugin>
+      <param name="spi_device">$(arg spi_device)</param>
+      <param name="spi_speed_hz">$(arg spi_speed_hz)</param>
+      <param name="spi_mode">$(arg spi_mode)</param>
+      <param name="bits_per_word">$(arg bits_per_word)</param>
+      <param name="gpio_chip">$(arg gpio_chip)</param>
+      <param name="cs_lines">$(arg cs_lines)</param>
+      <param name="active_devices">$(arg active_devices)</param>
+      <param name="channels_per_device">$(arg channels_per_device)</param>
+      <param name="auto_tare">$(arg auto_tare)</param>
+      <param name="ema_shift">$(arg ema_shift)</param>
+      <param name="measurement_wait_us">$(arg measurement_wait_us)</param>
+      <param name="response_check">$(arg response_check)</param>
+      <param name="max_consecutive_failures">$(arg max_consecutive_failures)</param>
+      <param name="recovery_interval_frames">$(arg recovery_interval_frames)</param>
+    </hardware>
+
+    <sensor name="raa0_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa0_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa0_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa0_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa0_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa0_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa1_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa1_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa1_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa1_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa1_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa1_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa2_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa2_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa2_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa2_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa2_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa2_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa3_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa3_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa3_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa3_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa3_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa3_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa4_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa4_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa4_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa4_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa4_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa4_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa5_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa5_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa5_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa5_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa5_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa5_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa6_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa6_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa6_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa6_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa6_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa6_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa7_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa7_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa7_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa7_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa7_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa7_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa8_ch0">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa8_ch1">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa8_ch2">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa8_ch3">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa8_ch4">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+    <sensor name="raa8_ch5">
+      <state_interface name="raw_i"/>
+      <state_interface name="raw_q"/>
+      <state_interface name="value"/>
+    </sensor>
+  </ros2_control>
+</robot>

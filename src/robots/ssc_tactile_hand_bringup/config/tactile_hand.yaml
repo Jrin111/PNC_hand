@@ -1,0 +1,26 @@
+# Hardware defaults confirmed from the WS125 RZ/V2H post-boot enumeration.
+# cs_lines is ordered by logical device index: raa0, raa1, ... raa8.
+hardware:
+  spi_device: /dev/spidev1.0
+  spi_speed_hz: 1500000
+  spi_mode: 0
+  bits_per_word: 8
+  gpio_chip: /dev/gpiochip1
+  cs_lines:
+    - 87  # raa0: Palm 1, PA7
+    - 80  # raa1: Palm 2, PA0
+    - 56  # raa2: Palm 3, P70
+    - 60  # raa3: Palm 4, P74
+    - 43  # raa4: Finger 1, P53
+    - 68  # raa5: Finger 2, P84
+    - 57  # raa6: Finger 3, P71
+    - 61  # raa7: Finger 4, P75
+    - 62  # raa8: Finger 5, P76
+  active_devices: 9
+  channels_per_device: 6
+  auto_tare: true
+  ema_shift: 2
+  measurement_wait_us: 145
+  response_check: strict
+  max_consecutive_failures: 3
+  recovery_interval_frames: 40

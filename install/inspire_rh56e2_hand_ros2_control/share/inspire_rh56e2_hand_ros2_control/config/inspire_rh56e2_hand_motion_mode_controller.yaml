@@ -1,0 +1,22 @@
+# Motion Mode Controller Configuration for Inspire RH56E2 Hand
+# This controller selects the per-finger motion mode at runtime via ForwardCommandController,
+# writing the Motion Mode registers (1625-1630) of the hand.
+#
+# Mode values (per finger):
+#   0 = Speed/Force Protection - stops at target angle or force limit (safe default)
+#   1 = Force Control          - closed-loop force maintenance (e.g. gentle grasp of an egg)
+#   2 = Load Retention         - continuous current for a static hold (generates heat)
+
+inspire_rh56e2_hand_motion_mode_controller:
+  ros__parameters:
+    # Joint specification
+    joints:
+      - thumb_proximal_yaw_joint     # Thumb yaw
+      - thumb_proximal_pitch_joint   # Thumb pitch/flex
+      - index_proximal_joint         # Index finger flex
+      - middle_proximal_joint        # Middle finger flex
+      - ring_proximal_joint          # Ring finger flex
+      - pinky_proximal_joint         # Pinky finger flex
+
+    # Interface configuration
+    interface_name: motion_mode
