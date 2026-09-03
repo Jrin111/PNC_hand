@@ -36,4 +36,6 @@ joint_state_broadcaster:
       - middle_proximal_joint
       - ring_proximal_joint
       - pinky_proximal_joint
-    interfaces: [position, velocity, force]
+    # GenericSystem mirrors commanded position. It has no measured velocity or
+    # force; omit those states so consumers cannot mistake zeros for feedback.
+    interfaces: [position]

@@ -8,6 +8,12 @@ for the shared SPI and GPIO chip-select wiring.
 See [PROJECT_STATUS.md](PROJECT_STATUS.md) for the living engineering context, design decisions,
 verified progress, open review items, hardware acceptance work, and handoff notes.
 
+For the new **left-hand 47-zone Foxglove heatmap and independent hardware-free demo**, start
+with [foxglove/README.md](foxglove/README.md). The demo uses the existing mock motion path and
+54 synthetic tactile channels. Touch-gesture recognition and camera overlays are outside this
+iteration. The earlier `install/` artifacts do not contain these new packages or launch changes;
+build into a separate `install_local/` for development.
+
 ## Required target: ROS 2 Jazzy
 
 ROS 2 Jazzy is required. The Renesas RZ/V2H RDK image used by this project provides Jazzy, and the
@@ -48,6 +54,9 @@ src/
   utils/
     dexhand_utils/                       # gripper-action adapter
     state_interfaces_broadcaster/        # pinned tactile state broadcaster
+    pnc_tactile_visualizer/              # 47 surface patches, named values and colors
+    pnc_hand_demo/                       # isolated hardware-free motion/tactile demo
+foxglove/                               # extension source, .foxe, layout and quick start
 install/                                 # matching existing Jazzy/AArch64 outputs
 platform/rzv2h/                          # DTS, reproducible patch, and compiled DTB
 ```
@@ -116,7 +125,7 @@ dependencies, then build both dependency closures against the RZ/V2H Jazzy sysro
 sysroot-rosdep-install /home/ubuntu/ros2_ws
 cd /home/ubuntu/ros2_ws
 cross-colcon-build --packages-up-to \
-  inspire_rh56e2_hand_bringup ssc_tactile_hand_bringup
+  inspire_rh56e2_hand_bringup ssc_tactile_hand_bringup pnc_hand_demo
 ```
 
 Replace the checked-in `install/` outputs only after the target architecture, ROS distribution,

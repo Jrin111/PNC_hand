@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>pnc_hand_demo</name>
+  <version>0.1.0</version>
+  <description>Isolated RH56E2 mock hand and 54-channel PNC tactile demonstration.</description>
+  <maintainer email="maintainer@example.com">PNC hand maintainers</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>inspire_rh56e2_hand_bringup</exec_depend>
+  <exec_depend>pnc_tactile_visualizer</exec_depend>
+  <exec_depend>foxglove_bridge</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>sensor_msgs</test_depend>
+  <test_depend>tf2_msgs</test_depend>
+  <test_depend>visualization_msgs</test_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

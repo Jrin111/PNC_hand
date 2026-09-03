@@ -16,6 +16,11 @@ electrical channels are acquired directly by the RZ/V2H; the ESP32 is not in thi
 The intended result is simultaneous hand actuation and tactile publication, followed by a
 verified mapping from the 54 electrical slots to the final 47 physical tactile zones.
 
+The user has now included Foxglove in the hardware-free phase: use the **left hand**, display
+continuous tactile intensity directly on its 3D surface, retain the hand-control panels, and add
+an independent simulation mode. Touch-gesture detection/automatic touch-triggered actions are
+explicitly deferred. The camera keypoint package was reviewed but is not needed for this scope.
+
 ## Target and compatibility decision
 
 The project target is ROS 2 Jazzy because the RZ/V2H RDK image used for this work provides Jazzy.
@@ -61,6 +66,9 @@ topic/parameter behavior and C++ plugin ABI differ across ROS distributions.
 | `src/utils/state_interfaces_broadcaster` | Pinned broadcaster used for tactile state publication |
 | `install/` | Existing matching ROS 2 Jazzy/AArch64 package outputs |
 | `platform/rzv2h/` | Modified DTS, reproducible patch, and matching WS125/RZ/V2H DTB |
+| `src/utils/pnc_tactile_visualizer` | 47 frame-attached surface polygons, per-zone colors, strict named-channel decoding |
+| `src/utils/pnc_hand_demo` | Left-hand mock motion and 54 synthetic channels in isolated ROS domain 77 |
+| `foxglove/` | Updated panel extension, packaged `.foxe`, 3D layout and usage instructions |
 
 ## Completed repository work
 
@@ -84,6 +92,81 @@ topic/parameter behavior and C++ plugin ABI differ across ROS distributions.
 No new cross-compilation was performed for the 2026-09-03 repository completion. The restored
 motion artifacts are the existing outputs, and the accepted tactile startup changes affect only
 launch/configuration metadata rather than compiled C++.
+
+The later Foxglove work adds Python ROS packages and an optional bridge switch to the source
+motion launch, and changes mock joint feedback to position-only (unmeasured force/velocity must
+remain unknown). These additions are not present in the old `install/` tree. Development builds
+use a separate install prefix; do not overwrite the target artifacts with a desktop build.
+
+### Foxglove software implementation
+
+- [x] Reused the supplied GitLab extension at `a3976ebb68718e7184eb16c3a5f255735f866130`,
+      preserving its license and the Console/Force/Gripper panels.
+- [x] Replaced six binary-contact pads with 54 named PNC channels and an explicitly enabled,
+      heartbeat-gated simulation input. No touch-gesture node is launched.
+- [x] Added left/right 47-zone CAD surface templates: 22 palm zones and five zones per fingertip.
+      Templates follow the URDF TF links and support independent simultaneous colors.
+- [x] Added unknown/NaN and stream-timeout handling; values are relative response, never Newtons.
+- [x] Added a left-hand demo launch using mock motion, one bridge, and production-compatible
+      162-key tactile messages, with fault/recovery inputs and independent ROS domain.
+- [x] Added pure decoding/geometry/model tests, extension regression tests and an opt-in ROS
+      integration check for colors, faults, mock joint feedback and TF attachment.
+
+The original NanoSen manual and finger Gerber establish 25 finger + 22 palm regions. The existing
+Inspire CAD does not include the added PNC carrier; mounting coordinates, board rotation and final
+electrical mapping remain unverified. Real `channel` fields are null and `mapping_verified=false`;
+only the explicit demo profile uses example wiring. A verified real profile requires all 47 actual
+channel assignments. Simulated NaN faults do not resolve the real plugin's stale-value issue below.
+
+The visualization is integrated with the existing acquisition interface at source level. Real
+SPI `read()` updates 54 channels with `raw_i`, `raw_q`, and `value` (162 state interfaces);
+the broadcaster publishes `/tactile/tactile_hand_state_broadcaster/names`
+(`control_msgs/msg/Keys`) and `/tactile/tactile_hand_state_broadcaster/values`
+(`control_msgs/msg/Float64Values`). The visualizer consumes those topics and publishes
+`/tactile/markers` for Foxglove through the bridge. The diagnostic panel also subscribes directly
+to the real names/values topics. Neither real display path requires the simulator.
+
+All 54 electrical slots retain independent values, and all 47 mapped surface regions can show
+different colors in the same frame. The manual simulation selection only chooses which stored
+channel value to edit. Real acquisition scans the nine chips sequentially and commits the frame;
+this supports multiple ongoing contacts but does not provide simultaneous sampling instants.
+The configured 40 Hz / 25 ms acquisition period is still an unmeasured target on the RDK.
+
+Real deployment is not yet a single-launch, hardware-validated setup. Existing real bringup does
+not start `pnc_tactile_visualizer`; deploy/build the added package, start it with a verified mapping
+and measured color range, retain the left-hand URDF/TF motion stack, and run one bridge in the
+same ROS domain. The position-control launch starts a bridge by default; disable that bridge if
+providing a separately configured one, and allow the uppercase `.STL` URDF assets as in the demo.
+The old `install/` does not contain these additions. Diagnostic numeric values support real data,
+but the panel's current color scale is fixed at 0..1 and may saturate for unnormalized hardware
+responses; 3D colors have configurable range/gain/offset. Mapping, response range and physical
+acquisition acceptance remain open even though ROS/mock and Foxglove GUI integration passed.
+
+Validation performed for this iteration:
+
+- Five visualization core/geometry tests and eight simulator-model tests pass without ROS.
+- Nine extension tests, TypeScript checking and production packaging pass; the installed local
+  extension is version 1.1.1 and its JavaScript matches the tested production build exactly.
+- A local Linux/AArch64 ROS 2 Jazzy container built the six-package demo dependency closure;
+  no real SPI tactile package or RZ/V2H target artifact was used or overwritten.
+- The live ROS integration check passed, including 162 exact keys, 47 valid TF
+  patches, simultaneous independent colors, per-chip NaN fault/recovery, six mock joint position
+  responses and patch movement with unchanged local geometry. This verifies ROS/mock behavior;
+  it does not certify physical motors, ADC acquisition or force calibration.
+- Foxglove Desktop GUI acceptance completed: the imported layout connects over WebSocket,
+  displays the full URDF hand and colored patches, and receives 54/54 tactile channels.
+  GUI clear and simultaneous ch0=0.30/ch1=0.80 inputs were observed in ROS and produced
+  distinct palm colors. GUI FIST reached the commanded six mock positions with TF changes;
+  OPEN restored all six positions to zero. These are simulator results, not physical feedback.
+- A live pause of only the simulated tactile source grayed all 47 zones after about 0.66 seconds;
+  resuming the source restored fresh heartbeat, finite values and colors. The controller manager
+  and bridge continued running. Version 1.1.1 also fixes an observed short-height Console
+  overlap by retaining readable card heights and scrolling; the corrected GUI was inspected.
+- Added a Docker/Compose demo recipe using the same successfully installed dependencies;
+  `docker compose config` passes. The recipe itself has not been rebuilt as a second image.
+- The actual Foxglove client successfully connects at `ws://127.0.0.1:8765`, renders the model
+  and markers, and publishes commands through the bridge. This supersedes the earlier
+  inconclusive standalone Node WebSocket probe. Refresh the view after extension updates.
 
 ## Required target acceptance
 
@@ -150,3 +233,6 @@ recovery state machine and rebuild the plugin.
 | 2026-09-03 | Added the modified WS125/RZ/V2H DTS, patch, compiled DTB, and living handoff document. |
 | 2026-09-03 | Restored Inspire motion bringup, complete hand description/meshes, `dexhand_utils`, and their existing Jazzy/AArch64 install outputs. |
 | 2026-09-03 | Fixed the accepted Jazzy motion/tactile launch issues and documented deferred runtime-policy changes. |
+| 2026-09-03 | Added the requested left-hand 3D tactile heatmap, updated Foxglove extension, and independent hardware-free simulation; deferred touch gestures per user direction. |
+| 2026-09-03 | Completed actual Foxglove GUI input/rendering and mock motion validation; installed extension 1.1.1 to fix overlapping Console controls in short panels. |
+| 2026-09-03 | Documented the real SPI-to-Foxglove source integration, independent multi-contact behavior, 54 electrical slots versus 47 physical zones, and the remaining mapping/range/build/startup requirements; no real-hardware validation is claimed. |

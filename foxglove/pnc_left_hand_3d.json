@@ -1,0 +1,134 @@
+{
+  "configById": {
+    "3D!pnc-hand": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 0.44,
+        "phi": 80,
+        "thetaOffset": -101.34551347625865,
+        "targetOffset": [
+          0,
+          0,
+          0.15
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.005,
+        "far": 10
+      },
+      "followMode": "follow-none",
+      "scene": {
+        "meshUpAxis": "z_up",
+        "transforms": {
+          "editable": false,
+          "showLabel": false,
+          "labelSize": 0.06,
+          "lineWidth": 1,
+          "visible": false,
+          "axisSize": 0.05
+        },
+        "backgroundColor": "#141d2b"
+      },
+      "transforms": {},
+      "topics": {
+        "/robot_description": {
+          "visible": true
+        },
+        "/tactile/markers": {
+          "visible": true
+        }
+      },
+      "layers": {
+        "7975a5bb-b268-4159-8b37-450138690126": {
+          "displayMode": "auto",
+          "fallbackColor": "#ffffff",
+          "showAxis": false,
+          "showOutlines": false,
+          "visible": true,
+          "frameLocked": true,
+          "instanceId": "7975a5bb-b268-4159-8b37-450138690126",
+          "label": "URDF",
+          "layerId": "foxglove.Urdf",
+          "sourceType": "topic",
+          "url": "",
+          "filePath": "",
+          "parameter": "",
+          "topic": "/robot_description",
+          "framePrefix": "",
+          "order": 1,
+          "links": {},
+          "axisScale": 1,
+          "opacity": 1
+        }
+      },
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {},
+      "followTf": "world",
+      "synchronize": false
+    },
+    "foxglove-dexhand-panels.PNC Tactile Diagnostics!pnc0": {},
+    "foxglove-dexhand-panels.Dexterous Hand Console!pnc1": {},
+    "foxglove-dexhand-panels.Dexterous Hand Force!pnc2": {},
+    "foxglove-dexhand-panels.Dexterous Hand Gripper!pnc3": {},
+    "RawMessages!pnc-status": {
+      "topicPath": "/tactile/visualization_status",
+      "fontSize": 12,
+      "defaultExpanded": true
+    },
+    "Tab!pnc-controls": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "Joint control",
+          "layout": "foxglove-dexhand-panels.Dexterous Hand Console!pnc1"
+        },
+        {
+          "title": "Inspire force",
+          "layout": "foxglove-dexhand-panels.Dexterous Hand Force!pnc2"
+        },
+        {
+          "title": "Gripper",
+          "layout": "foxglove-dexhand-panels.Dexterous Hand Gripper!pnc3"
+        },
+        {
+          "title": "Stream status",
+          "layout": "RawMessages!pnc-status"
+        }
+      ]
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "direction": "row",
+    "first": "3D!pnc-hand",
+    "second": {
+      "direction": "column",
+      "first": "foxglove-dexhand-panels.PNC Tactile Diagnostics!pnc0",
+      "second": "Tab!pnc-controls",
+      "splitPercentage": 63
+    },
+    "splitPercentage": 62
+  }
+}

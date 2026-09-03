@@ -1,0 +1,16 @@
+# Send only ROS sources and the demo Dockerfile to the builder.
+**
+!src/
+!src/**
+!docker/
+!docker/Dockerfile.demo
+
+# Keep generated outputs and nested checkout metadata out of src as well.
+**/.git
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/build
+**/install
+**/log

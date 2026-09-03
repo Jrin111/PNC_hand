@@ -22,10 +22,18 @@ declare exactly these state interfaces:
 | `raw_q` | Unsigned 16-bit RAA Q result represented as a `double` |
 | `value` | Firmware-compatible EMA of I minus the tare baseline; no force unit is implied |
 
-The transport acquires physical channels in the order 0 through 5. The hardware interface
-then maps them to logical channels with `{5, 0, 1, 2, 3, 4}` and commits a complete 54-channel
-frame only after every active device has passed the SPI echo and CRC checks. Slots belonging
-to inactive devices remain zero.
+The transport polls active devices and acquires each device's physical channels in the order
+0 through 5. The hardware interface maps them to logical channels with `{5, 0, 1, 2, 3, 4}`
+and commits the channel arrays after that polling cycle. Each successfully sampled device
+updates all six channels; failed or isolated devices retain their previous values while healthy
+devices continue updating. Slots belonging to inactive devices remain zero. The current state
+interfaces do not identify retained values as stale, so a new broadcaster timestamp does not
+prove that every device was sampled successfully.
+
+Multiple touched regions retain independent values in the same published frame. Polling does
+not impose a single-touch restriction, but the samples are taken sequentially rather than at
+one simultaneous instant. The configured 40 Hz / 25 ms cycle target still needs measurement on
+the assembled hardware.
 
 ## Hardware parameters
 
