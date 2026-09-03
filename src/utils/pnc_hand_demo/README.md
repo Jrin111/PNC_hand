@@ -5,11 +5,14 @@ channels, 3D tactile markers, and one Foxglove bridge. It does not start the SPI
 driver or a gesture node. Mock joint position follows commands; velocity and
 force measurements are unavailable and are omitted by the mock broadcaster.
 
-Build in a ROS 2 Jazzy workspace with the normal motion and Foxglove dependencies:
+Build from the repository root in ROS 2 Jazzy Linux with the normal motion and Foxglove
+dependencies. Use a separate install prefix to preserve the earlier RZ/V2H `install/` outputs:
 
 ```bash
-colcon build --packages-up-to pnc_hand_demo --symlink-install
-source install/setup.bash
+source /opt/ros/jazzy/setup.bash
+colcon build --base-paths src --packages-up-to pnc_hand_demo --symlink-install \
+  --build-base build --install-base install_local
+source install_local/setup.bash
 ros2 launch pnc_hand_demo hand_demo.launch.py
 ```
 

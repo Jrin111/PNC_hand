@@ -2,9 +2,16 @@
 
 Last updated: 2026-09-03
 
-This is the living project context for engineers and Codex sessions taking over the repository.
+This is the living project context for engineers and coding assistants taking over the repository.
 Update the progress lists and change log whenever source, artifacts, target image, hardware
 mapping, or validation status changes.
+
+For an independent source/design review, read [the Chinese review guide](docs/REVIEW_GUIDE.zh-CN.md)
+and inspect [PR #1](https://github.com/Jrin111/PNC_hand/pull/1). The implementation baseline is
+`3ecf1d6891a4dd8057e88c578c4c514a67e420c0`; the Foxglove implementation is
+`e5c43263a4517076c60ad469f3b99fc8256eb4e2` on `codex/pnc-foxglove-offline`.
+Check the current branch and PR state before reviewing. The guide invites checking and correcting
+these recorded conclusions; documentation updates are not new runtime or hardware validation.
 
 ## Background and objective
 
@@ -40,8 +47,10 @@ topic/parameter behavior and C++ plugin ABI differ across ROS distributions.
 - Preserve the existing Inspire hardware interface and its position, velocity, force,
   force-threshold, and motion-mode behavior. Restore its original bringup, description, meshes,
   and gripper adapter rather than replacing the motion stack with a tactile-only launch.
-- Acquire one complete tactile frame in each control-cycle `read()`. Map six physical channels per
-  RAA device to stable logical names and export `raw_i`, `raw_q`, and filtered `value` interfaces.
+- In each control-cycle `read()`, sequentially scan active devices and publish a 54-slot snapshot.
+  Healthy sampled devices update; failed devices currently retain their earlier values. Map six
+  physical channels per RAA device to stable logical names and export `raw_i`, `raw_q`, and
+  filtered `value` interfaces. A published snapshot is not proof of 54 new simultaneous samples.
 - Hold every GPIO chip-select HIGH except during its selected SPI transaction. Check the response
   echo and CRC, isolate repeated per-device failures, and attempt periodic recovery while healthy
   devices continue to update.
@@ -98,6 +107,23 @@ motion launch, and changes mock joint feedback to position-only (unmeasured forc
 remain unknown). These additions are not present in the old `install/` tree. Development builds
 use a separate install prefix; do not overwrite the target artifacts with a desktop build.
 
+### Minimum target installation for this update
+
+| Package/component | Required action |
+| --- | --- |
+| `pnc_tactile_visualizer` | Install the new Python ROS package, mapping files and target Jazzy dependencies |
+| `inspire_rh56e2_hand_bringup` | Reinstall launch/config resources for `launch_foxglove` and position-only mock feedback |
+| `pnc_hand_demo` | Optional Python simulation package; not needed by the real acquisition/display path |
+| `foxglove_bridge` | Confirm a compatible Jazzy target package is present; supply one if missing |
+| Foxglove panel extension | Install the packaged 1.1.1 `.foxe` on the display computer; no xbuild step |
+
+No native driver/broadcaster source changed in the Foxglove implementation commit. Reuse the
+existing compatible AArch64 outputs; there is no requirement to recompile every unchanged C++
+package merely to install Python nodes or launch files. Target Python entry points, package
+index/resources and dependencies still need correct installation. This update has not produced
+a new RZ/V2H xbuild overlay. If later fault/recovery changes affect native source or interfaces,
+build and deploy the complete affected dependency set and keep source/artifacts paired.
+
 ### Foxglove software implementation
 
 - [x] Reused the supplied GitLab extension at `a3976ebb68718e7184eb16c3a5f255735f866130`,
@@ -147,6 +173,10 @@ Validation performed for this iteration:
 - Five visualization core/geometry tests and eight simulator-model tests pass without ROS.
 - Nine extension tests, TypeScript checking and production packaging pass; the installed local
   extension is version 1.1.1 and its JavaScript matches the tested production build exactly.
+- The 22 automated tests are the 5 + 8 + 9 checks above. TypeScript checking, the live ROS
+  acceptance script and actual GUI interaction are separate forms of validation. These results
+  were recorded during the implementation; this review-documentation update does not rerun or
+  expand runtime tests, and the manual observations are not checked-in hardware logs.
 - A local Linux/AArch64 ROS 2 Jazzy container built the six-package demo dependency closure;
   no real SPI tactile package or RZ/V2H target artifact was used or overwritten.
 - The live ROS integration check passed, including 162 exact keys, 47 valid TF
@@ -174,6 +204,9 @@ Validation performed for this iteration:
 - [ ] Record the exact RDK/BSP image version and confirm `/opt/ros/jazzy`.
 - [ ] Confirm `/dev/spidev1.0`, `/dev/gpiochip1`, GPIO ownership, and native SS electrical safety
       after booting the included DTB.
+- [ ] Reconcile the earlier "SPI6" project label, the supplied DTS `&spi0` node and Linux
+      `/dev/spidev1.0` against the actual SoC/BSP and connector wiring. Confirm the WS125-specific
+      fixed-1.8-V SDHI0 assumption applies to the target board.
 - [ ] Validate response echo and CRC behavior on every populated RAA device.
 - [ ] Measure normal full-hand acquisition over at least 100 cycles and record average/max cycle
       time against the 40 Hz / 25 ms target.
@@ -195,6 +228,10 @@ The following code-level concerns are credible but intentionally not changed yet
 
 - Stale tactile values currently lack an agreed validity contract. Decide between NaN values,
   explicit online/age interfaces, or a hardware error policy before changing the interface.
+- An acquired I sample of zero retains that channel's earlier filtered I value before subtracting
+  tare, even when its raw I/Q fields update. Review whether this firmware-compatible policy is
+  appropriate for physical release/invalid-sample behavior; it is separate from a failed-chip
+  freeze and is not covered by simply detecting whole-message timeout.
 - Recovery with `auto_tare=true` can re-tare under load. Decide whether recovery preserves the
   previous baseline or requires an explicit unloaded re-tare.
 - Recovery selection can be unfair when `recovery_interval_frames=1`; the production default is
@@ -236,3 +273,4 @@ recovery state machine and rebuild the plugin.
 | 2026-09-03 | Added the requested left-hand 3D tactile heatmap, updated Foxglove extension, and independent hardware-free simulation; deferred touch gestures per user direction. |
 | 2026-09-03 | Completed actual Foxglove GUI input/rendering and mock motion validation; installed extension 1.1.1 to fix overlapping Console controls in short panels. |
 | 2026-09-03 | Documented the real SPI-to-Foxglove source integration, independent multi-contact behavior, 54 electrical slots versus 47 physical zones, and the remaining mapping/range/build/startup requirements; no real-hardware validation is claimed. |
+| 2026-09-03 | Added an independent Claude/engineer review guide and clarified bringup changes, minimum target installation, evidence boundaries, zero-I retention, and board/SPI naming checks. Documentation only; no runtime behavior, target artifacts or validation status changed. |
