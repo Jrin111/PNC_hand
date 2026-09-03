@@ -1,0 +1,35 @@
+# Official ROS library image; ECR avoids the Docker Hub timeout seen on this host.
+FROM public.ecr.aws/docker/library/ros:jazzy-ros-base
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# This dependency set was verified in the working Jazzy demo container.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ros-jazzy-controller-manager \
+      ros-jazzy-joint-state-broadcaster \
+      ros-jazzy-joint-trajectory-controller \
+      ros-jazzy-position-controllers \
+      ros-jazzy-forward-command-controller \
+      ros-jazzy-foxglove-bridge \
+      ros-jazzy-robot-state-publisher \
+      ros-jazzy-joint-state-publisher \
+      ros-jazzy-xacro \
+      ros-jazzy-control-msgs \
+      libyaml-cpp-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/pnc_demo
+COPY src/ ./src/
+
+# Build only the demo and its dependency closure. All outputs stay in the image;
+# the repository's target-specific install/ artifacts are never copied or used.
+RUN source /opt/ros/jazzy/setup.bash && \
+    colcon build --base-paths src --packages-up-to pnc_hand_demo \
+      --cmake-args -DBUILD_TESTING=OFF
+
+ENV ROS_DOMAIN_ID=77
+EXPOSE 8765
+
+ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/jazzy/setup.bash && source /opt/pnc_demo/install/setup.bash && exec \"$@\"", "--"]
+CMD ["ros2", "launch", "pnc_hand_demo", "hand_demo.launch.py", "demo_domain_id:=77", "hand_side:=left", "scenario:=sweep", "foxglove_port:=8765"]

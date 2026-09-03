@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.foxe
+!renesasuxsst.foxglove-dexhand-panels-1.1.2.foxe
+.DS_Store
+
+# Local verification output
+.test-dist/

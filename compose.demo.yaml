@@ -1,0 +1,12 @@
+services:
+  pnc-demo:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.demo
+    image: pnc-hand-demo:jazzy
+    init: true
+    environment:
+      ROS_DOMAIN_ID: "77"
+    ports:
+      - "127.0.0.1:8765:8765"
+    stop_grace_period: 20s

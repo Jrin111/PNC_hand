@@ -69,6 +69,14 @@ Controller configurations are provided in `config/`:
 
 The force threshold controller is loaded and started by both launch files alongside the primary motion controller.
 
+The Jazzy position controller retains the last commanded position target while it remains
+active, including when its command publisher stops. It has no command timeout and does not
+automatically stop the hand after 0.5 seconds without a new message. The old
+`command_timeout` setting was unsupported and has been removed; this corrects the
+configuration description without changing runtime behavior. Physical motion and force
+response still depend on the hand's active motion mode and force limits. See the
+[Jazzy position controller documentation](https://control.ros.org/jazzy/doc/ros2_controllers/position_controllers/doc/userdoc.html).
+
 ## Hand Descriptions
 Complete hand URDF files in `urdf/`:
 - `inspire_rh56e2_hand_left.urdf.xacro`: Left hand configuration

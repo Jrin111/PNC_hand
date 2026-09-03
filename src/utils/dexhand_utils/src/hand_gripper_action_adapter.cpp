@@ -236,6 +236,7 @@ private:
   void profile_callback(const std_msgs::msg::String::SharedPtr msg)
   {
     double redrive_width = -1.0;
+    double new_max_width = 0.0;
     {
       std::lock_guard<std::mutex> lock(profile_mutex_);
 
@@ -252,11 +253,14 @@ private:
       }
       current_profile_ = msg->data;
       max_gripper_width_ = max_widths_.at(current_profile_);
+      new_max_width = max_gripper_width_;
       RCLCPP_INFO(
         this->get_logger(), "Switched to profile: '%s' (max_width=%.4f m)",
         current_profile_.c_str(), max_gripper_width_);
       redrive_width = last_commanded_width_;
     }
+    // Keep live and late-joining controls in sync with the active profile's range.
+    publish_max_width(new_max_width);
     // Re-drive the hand with the last commanded width mapped through the NEW
     // profile. /set_grasp_profile and the width command arrive on different
     // topics with no cross-topic ordering guarantee, so under load the width

@@ -71,6 +71,21 @@ ament_export_dependencies(
 
 # Testing
 if(BUILD_TESTING)
+  find_package(Threads REQUIRED)
+  add_executable(serial_pty_test test/serial_pty_test.cpp)
+  target_include_directories(serial_pty_test PRIVATE include)
+  ament_target_dependencies(serial_pty_test hardware_interface rclcpp rclcpp_lifecycle)
+  target_link_libraries(serial_pty_test ${PROJECT_NAME}_hardware_interface Threads::Threads)
+  if(CMAKE_CROSSCOMPILING)
+    find_program(QEMU_AARCH64_EXECUTABLE qemu-aarch64-static)
+    if(QEMU_AARCH64_EXECUTABLE AND CMAKE_SYSROOT)
+      set_property(TARGET serial_pty_test PROPERTY CROSSCOMPILING_EMULATOR
+        "${QEMU_AARCH64_EXECUTABLE};-L;${CMAKE_SYSROOT}")
+    endif()
+  endif()
+  add_test(NAME serial_pty_test COMMAND serial_pty_test)
+  set_tests_properties(serial_pty_test PROPERTIES TIMEOUT 15)
+
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()

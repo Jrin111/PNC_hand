@@ -102,6 +102,7 @@ def launch_setup(context, *args, **kwargs) -> List[Node]:
     hand_side_value = LaunchConfiguration('hand_side').perform(context)
     gripper_mapping_value = LaunchConfiguration('gripper_mapping').perform(context)
     motion_mode_value = LaunchConfiguration('motion_mode').perform(context)
+    launch_foxglove_value = LaunchConfiguration('launch_foxglove').perform(context)
 
     # Get package directories
     pkg_share = get_package_share_directory('inspire_rh56e2_hand_bringup')
@@ -149,13 +150,6 @@ def launch_setup(context, *args, **kwargs) -> List[Node]:
 
     motion_mode_controller_config = os.path.join(
         pkg_share, 'config', 'inspire_rh56e2_hand_motion_mode_controller.yaml'
-    )
-
-    # Foxglove bridge launch file
-    foxglove_bridge_launch = os.path.join(
-        get_package_share_directory('foxglove_bridge'),
-        'launch',
-        'foxglove_bridge_launch.xml'
     )
 
     # Motion mode controller spawner (referenced below so an optional initial mode can be
@@ -247,14 +241,20 @@ def launch_setup(context, *args, **kwargs) -> List[Node]:
                 }
             ],
         ),
-        # Foxglove bridge for web-based visualization
-        IncludeLaunchDescription(
+    ]
+
+    # An enclosing launch may provide one shared bridge for motion and tactile.
+    if launch_foxglove_value.lower() == 'true':
+        foxglove_bridge_launch = os.path.join(
+            get_package_share_directory('foxglove_bridge'), 'launch',
+            'foxglove_bridge_launch.xml',
+        )
+        nodes.append(IncludeLaunchDescription(
             FrontendLaunchDescriptionSource(foxglove_bridge_launch),
             launch_arguments={
                 'capabilities': '[clientPublish,parameters,parametersSubscribe,services,assets]',
             }.items(),
-        ),
-    ]
+        ))
 
     # Optionally apply an initial per-finger motion mode at startup. Triggered once the
     # motion mode controller spawner exits (i.e. the controller is active), so the command
@@ -340,5 +340,9 @@ def generate_launch_description() -> LaunchDescription:
         hand_side_arg,
         gripper_mapping_arg,
         motion_mode_arg,
+        DeclareLaunchArgument(
+            'launch_foxglove', default_value='true', choices=['true', 'false'],
+            description='Start a bridge here; false when a parent launch starts one shared bridge',
+        ),
         OpaqueFunction(function=launch_setup)
     ])

@@ -58,19 +58,36 @@ if(BUILD_TESTING)
   target_include_directories(protocol_processing_test
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
   )
+
+  # Run the production read/lifecycle code against a test-only SPI transport.
+  # No physical device or ROS command publisher is used by this target.
+  add_executable(hardware_validity_test
+    test/hardware_validity_test.cpp
+    src/ssc_tactile_hand_hardware_interface.cpp
+  )
+  target_include_directories(hardware_validity_test
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  ament_target_dependencies(hardware_validity_test
+    hardware_interface pluginlib rclcpp rclcpp_lifecycle
+  )
+
   if(CMAKE_CROSSCOMPILING)
     find_program(QEMU_AARCH64_EXECUTABLE qemu-aarch64-static)
     if(QEMU_AARCH64_EXECUTABLE AND CMAKE_SYSROOT)
-      set_property(
-        TARGET protocol_processing_test
-        PROPERTY CROSSCOMPILING_EMULATOR
-          "${QEMU_AARCH64_EXECUTABLE};-L;${CMAKE_SYSROOT}"
-      )
+      foreach(test_target protocol_processing_test hardware_validity_test)
+        set_property(
+          TARGET ${test_target}
+          PROPERTY CROSSCOMPILING_EMULATOR
+            "${QEMU_AARCH64_EXECUTABLE};-L;${CMAKE_SYSROOT}"
+        )
+      endforeach()
     else()
-      message(WARNING "ARM64 protocol test cannot run during cross-build: QEMU or sysroot missing")
+      message(WARNING "ARM64 tests cannot run during cross-build: QEMU or sysroot missing")
     endif()
   endif()
   add_test(NAME protocol_processing_test COMMAND protocol_processing_test)
+  add_test(NAME hardware_validity_test COMMAND hardware_validity_test)
 endif()
 
 pluginlib_export_plugin_description_file(
