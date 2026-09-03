@@ -90,7 +90,8 @@ PR 分支是完整仓库快照，包含继承的基础代码；“Files changed�
 
 起始实现的核对线索：原驱动/broadcaster 的 C++ 未修改；运动 bringup 改了
 `launch_foxglove` 开关及 mock 仅发布 position。这些仍须用提交差异核实，不能直接当作结论。
-后续已授权的评审修复修改了触觉驱动 C++：采集失败/未采样状态输出 NaN，需要重新 xbuild；
+后续已授权的评审修复修改了触觉驱动 C++：采集失败/未采样状态输出 NaN；
+修复提交 `0efb254` 已完成独立 RZ/V2H sysroot 构建，记录见 `PROJECT_STATUS.md`，实机部署仍待完成。
 smoke 已移除所有运动命令，扩展 1.1.2 增加帧长度检查。不能把起始实现的“未改 C++”套用于当前 HEAD。
 重点回答：新增层是否正确复用原 controller、接口、namespace、QoS、TF 和启动关系？
 是否影响原机械手真实控制？真实数据能否不依赖模拟源到达 Foxglove？
@@ -108,6 +109,11 @@ smoke 已移除所有运动命令，扩展 1.1.2 增加帧长度检查。不能�
 - 真实 target 是 RZ/V2H AArch64 + ROS 2 Jazzy。原 `install/` 保留旧目标产物，
   不含新增 Python 显示包和本次 launch；开发安装使用单独目录，不覆盖旧产物。
   未变更的兼容 C++ 产物可复用；若改原生接口/ABI，再用匹配 xbuild 构建相关依赖集合。
+- 用户指定的交叉编译环境来自 [ubuntu_x_compilation](https://partnergitlab.renesas.solutions/pai/ros2/utility/ubuntu_x_compilation)。
+  编译前加载配套 [ubuntu_xbuild_toolchains](https://github.com/renesas-rdk/ubuntu_xbuild_toolchains)
+  中 `.github/copilot-instructions.md` 和 `.github/skills/arm64-cross-build/SKILL.md`，
+  按 skill 使用 `sysroot-rosdep-install`、`arm64-chroot`、`cross-colcon-build`。
+  独立 xbuild 工作区使用标准 `build/install/log`；普通 Jazzy 容器的原生构建不等于板端 sysroot 构建。
 
 ## 5. 主对话汇总与维护状态
 

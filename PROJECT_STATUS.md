@@ -19,8 +19,9 @@ these recorded conclusions; documentation updates are not new runtime or hardwar
 
 The subsequent user-authorized review fixes change runtime behavior: failed-chip NaN output
 in the tactile C++ plugin, tactile-only smoke injection, and strict frame lengths in extension
-1.1.2. Rebuild the tactile plugin in the matching target xbuild environment before deployment;
-the preserved `install/` outputs do not include these fixes.
+1.1.2. All nine packages at repair commit `0efb254` have now been built using the official
+RZ/V2H Jazzy sysroot in a separate workspace. Deploy that new overlay with matching target
+dependencies; the preserved repository `install/` outputs do not include these fixes.
 
 ## Background and objective
 
@@ -107,7 +108,7 @@ topic/parameter behavior and C++ plugin ABI differ across ROS distributions.
 - [x] Completed available file-level consistency, static configuration, protocol, and artifact
       architecture checks.
 
-No new cross-compilation was performed for the 2026-09-03 repository completion. The restored
+No new cross-compilation was performed for the initial 2026-09-03 repository completion. The restored
 motion artifacts are the existing outputs, and the accepted tactile startup changes affect only
 launch/configuration metadata rather than compiled C++.
 
@@ -131,8 +132,9 @@ No native driver/broadcaster source changed in the initial Foxglove implementati
 The later review fix changes tactile driver C++, so rebuild that plugin and its affected
 dependency set. The 162 state interface names/types are unchanged; the unchanged Inspire and
 broadcaster binaries can be reused when compatible. Python entry points, package index/resources
-and dependencies still need correct installation. No new RZ/V2H xbuild overlay has been produced;
-the old `install/` remains a historical artifact set, not the output of the repaired source.
+and dependencies still need correct installation. A separate RZ/V2H xbuild overlay has now been
+produced; see the build record below. The old repository `install/` remains a historical artifact
+set, not the output of the repaired source.
 
 ### Foxglove software implementation
 
@@ -239,9 +241,52 @@ Historical validation of the initial implementation (extension 1.1.1):
   colcon test-result --test-result-base build --verbose
   ```
 
-This is a Linux/Jazzy native build with a fake bus, not a matching RZ/V2H sysroot xbuild,
-physical SPI validation, new GUI motion acceptance or a rebuilt Compose image. The source fixes
-are available; target rebuild/deployment, physical mapping, calibration and acceptance are pending.
+The checks above used a Linux/Jazzy native build and a fake bus. The subsequent official
+RZ/V2H sysroot build is recorded below. Neither run validates physical SPI, new GUI motion
+acceptance or a rebuilt Compose image. Board deployment, physical mapping, calibration and
+acceptance remain pending.
+
+### RZ/V2H sysroot cross-build
+
+- Source: all nine `src/` packages from repair commit `0efb254`; no additional runtime source
+  changes were needed to build. The final `cross-colcon-build` exited 0 with **9 packages
+  finished**. The broadcaster reports an upstream `tl_expected` deprecation warning.
+- Environment repository: user-specified `ubuntu_x_compilation` at `ed6520c`; companion
+  `ubuntu_xbuild_toolchains` at `1a020f538e0b0cb63cba9e154d226a4358b84932` (`v1.3.0`).
+  Loaded its cross-build skill and used `sysroot-rosdep-install`, `arm64-chroot`,
+  `sysroot-fix` and `cross-colcon-build`.
+- Image: `ghcr.io/renesas-rdk/rzv2h_ubuntu_xbuild:multiarch`, index digest
+  `sha256:a8ffd965afd149f1054d17ac2bf76e261a84c4475b9888b9372c9900480ade63`.
+  Container `pnc-rzv2h-xbuild` runs on ARM64; compilation still uses the separate
+  `/opt/arm64_sysroot`, GCC 13.3.0 `aarch64-linux-gnu-g++`, and `-mcpu=cortex-a55`.
+- Target dependencies include hardware_interface/controller_interface **4.45.2**, libgpiod
+  **1.6.3** (`libgpiod2t64`, SONAME `libgpiod.so.2`), Foxglove Bridge **3.4.1**, glibc
+  **2.39-0ubuntu8.7**, and libstdc++ **14.2.0-4ubuntu2~24.04.1**. The SONAME does not mean the
+  libgpiod 2.x API. The eventual board image and runtime versions still need reconciliation.
+- Environment corrections: refreshed stale target apt indexes after a runtime-dependency
+  download returned 404; installed the code generator's declared `python3-jinja2` and
+  `python3-typeguard` dependencies on the container host. Restored the full sysroot source
+  manifests before resolving `exec_depend`, which the v1.3.0 build-dependency helper removes.
+  No toolchain, CPU target or project dependency metadata was changed.
+- Validation: copied the install tree to `/opt/pnc_review/install` inside the target sysroot.
+  Both cross-built tactile test executables passed there (protocol/processing plus all five
+  hardware-validity groups). The three production shared libraries loaded successfully;
+  all nine relocated ROS package indexes, both Python node modules, ROS imports, entry points,
+  heatmap files and bringup resources passed their installation checks. No nodes, hardware
+  devices or motor commands were started by this check.
+- Local build root: `/Users/jr/Documents/ChatGPT/Multiple tactile sensor/xbuild_review/ros2_ws`;
+  outputs are its standard `build/`, `install/`, `log/`. The new overlay is **local only** and
+  does not overwrite or ship through the Git-tracked historical `PNC_hand/install/`.
+  Reproduction commands are in [README.md](README.md#full-build-after-a-native-source-or-abi-change).
+- Evidence under that build root: `log/pnc-cross-build-retry.log`,
+  `log/pnc-target-validity-tests.log`, `log/pnc-target-load-check.log`,
+  `log/pnc_sysroot_check.py`, and `log/pnc-target-versions.txt`.
+  The new tactile plugin SHA-256 is
+  `e85139019c423835db59020477e6f1b8c487464c83e6bed72f004f8dd56312a2`.
+
+This establishes build and load compatibility with the recorded sysroot, plus the targeted
+fake-bus behavior. It does not establish compatibility with an unrecorded board image or
+complete the SPI/DTB/wiring/40 Hz hardware acceptance below.
 
 ## Required target acceptance
 
@@ -310,7 +355,8 @@ recovery state machine and rebuild the plugin.
 1. Clone the private repository and read `README.md` and this file first.
 2. Use the RZ/V2H ROS 2 Jazzy environment exactly; do not execute the AArch64 target binaries on
    the development host.
-3. Treat `src/` as source of truth and `install/` as the currently paired target output. Do not
+3. Treat `src/` as source of truth and the Git-tracked `install/` as historical target output.
+   Use the new isolated xbuild overlay for the repaired source, after checking the board ABI. Do not
    rename ROS packages without rebuilding every dependent artifact and updating all references.
 4. Do not rebuild merely for a handoff. When a compiled source change is accepted, use the
    Renesas Jazzy xbuild workflow and replace the complete affected dependency set.
@@ -333,3 +379,4 @@ recovery state machine and rebuild the plugin.
 | 2026-09-03 | Added an independent Claude/engineer review guide and clarified bringup changes, minimum target installation, evidence boundaries, zero-I retention, and board/SPI naming checks. Documentation only; no runtime behavior, target artifacts or validation status changed. |
 | 2026-09-03 | Added CLAUDE.md with the user's main/Explore/Test/Review agent roles, independent architecture review requirements, original-package reading order, focused testing and project-state handoff rules; aligned the review guide with existing user authorization. Documentation only. |
 | 2026-09-03 | Addressed review findings: failed/unmeasured chip states become NaN in the real driver; smoke publishes only simulated tactile input; extension 1.1.2 rejects mismatched frame lengths. Target plugin rebuild/deployment and hardware acceptance remain pending. |
+| 2026-09-03 | Cloned the user-specified xbuild environment and loaded its companion skill. Cross-built all nine packages at `0efb254` with the official RZ/V2H Jazzy sysroot; target-sysroot fake-bus and relocated-install checks passed. New install remains in the separate local xbuild workspace; board deployment and hardware acceptance remain pending. |

@@ -32,7 +32,9 @@ The Foxglove implementation commit is `e5c43263a4517076c60ad469f3b99fc8256eb4e2`
 verify the current PR status; do not assume an unmerged feature is already present on `main`.
 The next two commits clarified that implementation. The later review fixes add failed-chip
 NaN output in the C++ tactile driver, remove motor commands from the demo smoke check, and
-ship extension 1.1.2 with mismatched-frame rejection. No hardware acceptance is claimed.
+ship extension 1.1.2 with mismatched-frame rejection. All nine ROS packages at repair commit
+`0efb254` now build with the official RZ/V2H Jazzy xbuild sysroot; target-sysroot load checks and
+the two tactile test executables pass. Board deployment and hardware acceptance remain pending.
 
 ## What works, and what remains to be established
 
@@ -42,7 +44,7 @@ ship extension 1.1.2 with mismatched-frame rejection. No hardware acceptance is 
 | Multiple contacts with independent strengths | Driver tracks independent channel values; ROS/mock and actual Foxglove checks exercised two different strengths together | Verify physical multi-contact response; sequential scanning is not simultaneous sampling |
 | Touch colors on the moving left hand | 47 link-attached surface templates; color and mock joint/TF movement checked | Confirm all physical channel assignments, mounting geometry and response range |
 | Real data reaches Foxglove | Visualizer and diagnostic panel consume the original names/values interface; simulation uses that same interface | Install the new packages and launch configuration on the RDK; run the documented real startup sequence |
-| Clear missing-data behavior | Failed or unmeasured chips now export NaN; display paths mark nonfinite values unknown, with a separate stream timeout | Rebuild/deploy the repaired SPI plugin and verify real failures/recovery; the old binary still freezes values |
+| Clear missing-data behavior | Failed or unmeasured chips now export NaN; display paths mark nonfinite values unknown, with a separate stream timeout | Deploy the repaired SPI plugin with matching target dependencies and verify real failures/recovery; the old binary still freezes values |
 
 The 54 entries are electrical slots (9 devices × 6), while the 47 surface regions are 22 palm
 and 25 finger regions. The remaining seven slots have no surface patch in this model. Real
@@ -189,28 +191,46 @@ position-only mock joint feedback. The real controller configuration is unchange
 Real startup currently uses separate motion, tactile, visualizer and bridge commands; the
 original motion launch does not automatically start the tactile visualizer.
 
-Use the existing RZ/V2H Jazzy xbuild/target environment to rebuild the tactile plugin and prepare
-an overlay with the new Python entry points, ROS package index and resources. This does not
-require recompiling unrelated unchanged C++ packages. Confirm the board's Python/ROS
-dependencies. The Linux demo build has been checked; this target overlay has not yet been
-built/deployed in the RZ/V2H xbuild environment for this update.
+The official RZ/V2H Jazzy xbuild has now produced all nine packages from `0efb254`, including
+the repaired tactile plugin, Python entry points, ROS package index and resources. The new
+overlay is in the separate local `xbuild_review/ros2_ws/install/` workspace; it has not replaced
+the historical repository `install/` or been deployed to a board. See
+[the build record](PROJECT_STATUS.md#rzv2h-sysroot-cross-build) for its location, dependency
+versions and validation. Confirm these dependencies against the actual board image before use.
 
 ## Full build after a native source or ABI change
 
-Stage all packages under `src/` in the standard Renesas Ubuntu xbuild workspace, install sysroot
-dependencies, then build the affected dependency closures against the RZ/V2H Jazzy sysroot.
-The following is the broad build including the optional demo, not the minimum work required
-for running only the real acquisition/display path:
+Use the user-specified [ubuntu_x_compilation](https://partnergitlab.renesas.solutions/pai/ros2/utility/ubuntu_x_compilation)
+environment and the companion [arm64-cross-build skill](https://github.com/renesas-rdk/ubuntu_xbuild_toolchains/blob/1a020f538e0b0cb63cba9e154d226a4358b84932/.github/skills/arm64-cross-build/SKILL.md).
+Stage the full `src/` tree in a separate workspace mounted at `/home/ubuntu/ros2_ws`.
+The following commands run **inside the xbuild container**, with `PRODUCT=V2H` and
+`ARM64_SYSROOT=/opt/arm64_sysroot`. This builds all packages, including the optional demo:
 
 ```bash
-sysroot-rosdep-install /home/ubuntu/ros2_ws
 cd /home/ubuntu/ros2_ws
-cross-colcon-build --packages-up-to \
-  inspire_rh56e2_hand_bringup ssc_tactile_hand_bringup pnc_hand_demo
+
+# Host Python runs the generate_parameter_library code generator.
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends python3-jinja2 python3-typeguard
+
+# Build and runtime dependencies belong in the separate target sysroot.
+arm64-chroot apt-get update
+sysroot-rosdep-install
+
+# Toolchain v1.3.0 strips exec_depend from its copied package.xml files.
+# Restore the full manifests before resolving runtime dependencies.
+sudo rsync -a src/ "$ARM64_SYSROOT/home/ubuntu/ros2_ws/src/"
+arm64-chroot bash -c 'export ROS_VERSION=2 ROS_PYTHON_VERSION=3 ROS_DISTRO=jazzy; rosdep install --from-paths /home/ubuntu/ros2_ws/src --ignore-src --dependency-types exec -y'
+sysroot-fix
+cross-colcon-build
 ```
 
-Replace the checked-in `install/` outputs only after the target architecture, ROS distribution,
-source revision, and relevant tests have been recorded.
+The host Python packages above serve build-time code generation; they do not supply target
+runtime libraries. Keep the wrapper and toolchain unchanged, and use the standard `build/`,
+`install/`, `log/` directories in that isolated workspace. No `--symlink-install` was used.
+On the matching board, source `/opt/ros/jazzy/setup.bash` and then the new overlay's
+`install/local_setup.bash`. Install the target runtime dependencies too; the overlay does not
+bundle ROS, Foxglove Bridge or system libraries.
 
 ## Current validation boundary
 

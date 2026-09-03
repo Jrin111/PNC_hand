@@ -113,8 +113,11 @@ bridge 的大写 `.STL` 资源规则见 [Foxglove 使用说明的真实接入部
 仓库旧 `install/` 不包含新增可视化包、bringup 修改或 NaN 修复；不要仅更新 `.foxe` 就认为板端已更新。
 目标要求 RZ/V2H AArch64 + ROS 2 Jazzy；原触觉包还使用 libgpiod 1.6 API，拒绝直接用 2.x 构建。
 部署时也要核对目标 libgpiod 运行库等依赖，而不只检查插件文件是否存在。
-本轮已接受 C++ 故障处理修改，应使用匹配 Jazzy sysroot 的 xbuild 重编相关依赖并更新产物。
-桌面/Linux 容器的构建成功不能代替目标 ABI、Python 安装路径和启动环境验证。
+修复提交 `0efb254` 的全部 9 个 ROS 包现已使用官方 RZ/V2H Jazzy sysroot 交叉构建成功，
+并在该 sysroot 内通过定向假总线测试、插件加载与 Python 安装检查。
+环境版本、日志和新产物目录见 [PROJECT_STATUS.md 的交叉构建记录](../PROJECT_STATUS.md#rzv2h-sysroot-cross-build)。
+新 overlay 保存在本机独立 xbuild 工作区，未替换 GitHub 中的旧 `install/`。
+最终设备的 BSP/运行库、实物启动和 SPI 验收仍需核对；sysroot 验证不能代替这些步骤。
 
 ## 6. 已报告验证与复现入口
 
