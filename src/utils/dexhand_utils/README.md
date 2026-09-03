@@ -34,9 +34,10 @@ The adapter maps gripper width commands to the following 6 joints:
 - `execution_duration` (double, default: `2.0`) - Duration for hand action execution (seconds)
 
 ### Topics
-- `~/hand_gripper_cmd` (control_msgs/action/ParallelGripperCommand) - Action server for gripper commands
-- `~/hand_gripper_command` (control_msgs/msg/GripperCommand) - Subscriber for simple gripper commands
+- `hand_gripper_cmd` (control_msgs/action/ParallelGripperCommand) - Action server for gripper commands, relative to the node namespace
+- `hand_gripper_command` (control_msgs/msg/GripperCommand) - Subscriber for simple gripper commands, relative to the node namespace
 - `set_grasp_profile` (std_msgs/msg/String) - Subscriber to switch the active grasp profile at runtime (payload = profile name, e.g. `three_fingers`)
+- `gripper_max_width` (std_msgs/msg/Float64) - Reliable/transient-local current profile width limit in meters; refreshed after each profile change, including for late subscribers
 - Position controller topic (std_msgs/Float64MultiArray) - Position commands to hand controller
 
 ### Configuration Files
@@ -88,8 +89,19 @@ ros2 topic pub -1 /set_grasp_profile std_msgs/msg/String "{data: 'three_fingers'
 ros2 action send_goal /hand_gripper_cmd control_msgs/action/ParallelGripperCommand "{command: {position: [0.03], effort: [10.0]}}"
 
 # Send simple gripper commands via topic (no feedback)
-ros2 topic pub /hand_gripper_command control_msgs/msg/GripperCommand "{position: 0.03, effort: 10.0}"
+ros2 topic pub /hand_gripper_command control_msgs/msg/GripperCommand "{position: 0.03, max_effort: 10.0}"
 
 # Close hand via topic
-ros2 topic pub /hand_gripper_command control_msgs/msg/GripperCommand "{position: 0.0, effort: 5.0}"
+ros2 topic pub /hand_gripper_command control_msgs/msg/GripperCommand "{position: 0.0, max_effort: 5.0}"
 ```
+
+### Focused installation check
+
+After building and sourcing the current overlay, run `python3 test/profile_width_smoke.py`
+from this source package. It starts only the installed adapter in a unique namespace in
+localhost ROS domain 189, switches profiles and checks the live/latched width metadata.
+It sends no gripper or position commands and does not start a hardware controller.
+
+The action path's feedback/result uses elapsed-time interpolation, not measured hand arrival.
+The ordinary gripper topic is an open-loop command interface; use actual joint feedback when
+assessing physical motion.

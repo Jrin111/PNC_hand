@@ -688,6 +688,7 @@ hardware_interface::return_type InspireRH56E2HandHardwareInterface::write(
 
 bool InspireRH56E2HandHardwareInterface::open_serial_port()
 {
+  close_serial_port();
   serial_fd_ = ::open(serial_port_.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
   if (serial_fd_ < 0) {
     RCLCPP_ERROR(
@@ -701,6 +702,7 @@ bool InspireRH56E2HandHardwareInterface::open_serial_port()
     RCLCPP_ERROR(
       rclcpp::get_logger("InspireRH56E2HandHardwareInterface"), "Error from tcgetattr: %s",
       strerror(errno));
+    close_serial_port();
     return false;
   }
 
@@ -718,9 +720,13 @@ bool InspireRH56E2HandHardwareInterface::open_serial_port()
     RCLCPP_ERROR(
       rclcpp::get_logger("InspireRH56E2HandHardwareInterface"),
       "Unsupported baudrate: %d. Supported: 115200, 57600, 19200, 921600", baudrate_);
+    close_serial_port();
     return false;
   }
 
+  // Responses contain arbitrary binary bytes. Clear inherited input translation,
+  // stripping and parity marking as well as canonical/echo processing.
+  cfmakeraw(&tty);
   cfsetospeed(&tty, speed);
   cfsetispeed(&tty, speed);
 
@@ -742,6 +748,7 @@ bool InspireRH56E2HandHardwareInterface::open_serial_port()
     RCLCPP_ERROR(
       rclcpp::get_logger("InspireRH56E2HandHardwareInterface"), "Error from tcsetattr: %s",
       strerror(errno));
+    close_serial_port();
     return false;
   }
 

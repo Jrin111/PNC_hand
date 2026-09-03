@@ -65,7 +65,7 @@ public:
 private:
   // Communication
   std::string serial_port_;
-  int serial_fd_;
+  int serial_fd_ = -1;
   int baudrate_;
   uint8_t hand_id_;
 
