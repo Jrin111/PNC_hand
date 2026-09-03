@@ -6,6 +6,10 @@ This is the living project context for engineers and coding assistants taking ov
 Update the progress lists and change log whenever source, artifacts, target image, hardware
 mapping, or validation status changes.
 
+[CLAUDE.md](CLAUDE.md) records the user's requested main/subagent responsibilities, independent
+review approach, focused test policy and state-maintenance workflow. Review-only instructions
+apply to review-only tasks; existing user authorization governs later implementation work.
+
 For an independent source/design review, read [the Chinese review guide](docs/REVIEW_GUIDE.zh-CN.md)
 and inspect [PR #1](https://github.com/Jrin111/PNC_hand/pull/1). The implementation baseline is
 `3ecf1d6891a4dd8057e88c578c4c514a67e420c0`; the Foxglove implementation is
@@ -274,3 +278,4 @@ recovery state machine and rebuild the plugin.
 | 2026-09-03 | Completed actual Foxglove GUI input/rendering and mock motion validation; installed extension 1.1.1 to fix overlapping Console controls in short panels. |
 | 2026-09-03 | Documented the real SPI-to-Foxglove source integration, independent multi-contact behavior, 54 electrical slots versus 47 physical zones, and the remaining mapping/range/build/startup requirements; no real-hardware validation is claimed. |
 | 2026-09-03 | Added an independent Claude/engineer review guide and clarified bringup changes, minimum target installation, evidence boundaries, zero-I retention, and board/SPI naming checks. Documentation only; no runtime behavior, target artifacts or validation status changed. |
+| 2026-09-03 | Added CLAUDE.md with the user's main/Explore/Test/Review agent roles, independent architecture review requirements, original-package reading order, focused testing and project-state handoff rules; aligned the review guide with existing user authorization. Documentation only. |

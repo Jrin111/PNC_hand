@@ -18,6 +18,9 @@ build into a separate `install_local/` for development.
 
 ## Independent review / 独立评审入口
 
+Claude should follow [CLAUDE.md](CLAUDE.md) for the user-requested main/subagent roles,
+independent evaluation of the original architecture and changes, focused validation, and status upkeep.
+
 For Claude or another engineer reviewing the implementation and design, begin with
 [中文评审指南](docs/REVIEW_GUIDE.zh-CN.md), then inspect the linked source files and
 [PR #1](https://github.com/Jrin111/PNC_hand/pull/1). The guide records the user's requirements,
