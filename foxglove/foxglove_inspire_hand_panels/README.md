@@ -10,6 +10,8 @@ Adapted from `https://partnergitlab.renesas.solutions/pai/ros2/utility/foxglove/
 
 Version 1.1.1 fixes the Console layout in short panels: joint rows keep a readable minimum height and the panel scrolls vertically.
 
+Version 1.1.2 rejects tactile values frames whose length differs from the received keys array, showing all measurements as Unknown instead of interpreting a partial or mismatched frame. This length check cannot identify an old frame if a names reconfiguration preserves the same array length.
+
 - **Dexterous Hand Console**: six joint targets, presets and live position feedback.
 - **Dexterous Hand Force**: force thresholds and measured feedback when provided. Position-only simulation has **Unknown** force/velocity; no force is fabricated.
 - **Dexterous Hand Gripper**: width command through `/gripper_command`.

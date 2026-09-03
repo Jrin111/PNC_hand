@@ -1,3 +1,9 @@
+## 1.1.2 — Reject mismatched tactile frames
+
+- Require values arrays to match the full received keys length before decoding any channel; short or long frames now show Unknown.
+- Preserve named subsets, per-key duplicate rejection, real zero values and Float64Array support.
+- Cover different-length names reconfiguration with regression tests. Length checks cannot distinguish old and new frames when both schemas have the same length.
+
 ## 1.1.1 — Short Console panel layout
 
 - Keep joint rows at their readable content height and scroll short Console panels instead of overlapping sliders, feedback and presets.

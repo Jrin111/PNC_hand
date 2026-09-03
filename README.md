@@ -30,17 +30,19 @@ Its statements are claims to check against the code, not a substitute for that r
 The Foxglove implementation commit is `e5c43263a4517076c60ad469f3b99fc8256eb4e2`, based on
 `3ecf1d6891a4dd8057e88c578c4c514a67e420c0`. Review branch `codex/pnc-foxglove-offline` and
 verify the current PR status; do not assume an unmerged feature is already present on `main`.
-Later documentation commits clarify that implementation without claiming new hardware tests.
+The next two commits clarified that implementation. The later review fixes add failed-chip
+NaN output in the C++ tactile driver, remove motor commands from the demo smoke check, and
+ship extension 1.1.2 with mismatched-frame rejection. No hardware acceptance is claimed.
 
 ## What works, and what remains to be established
 
 | Requirement | Implementation and evidence | Remaining work |
 | --- | --- | --- |
 | RZ/V2H directly acquires nine RAA devices | Existing SPI/GPIO hardware plugin exports 54 channels, each with `raw_i`, `raw_q`, and filtered `value` | Target SPI/echo/CRC, wiring and timing acceptance |
-| Multiple contacts with independent strengths | Driver retains per-channel values; ROS/mock and actual Foxglove checks exercised two different strengths together | Verify physical multi-contact response; sequential scanning is not simultaneous sampling |
+| Multiple contacts with independent strengths | Driver tracks independent channel values; ROS/mock and actual Foxglove checks exercised two different strengths together | Verify physical multi-contact response; sequential scanning is not simultaneous sampling |
 | Touch colors on the moving left hand | 47 link-attached surface templates; color and mock joint/TF movement checked | Confirm all physical channel assignments, mounting geometry and response range |
 | Real data reaches Foxglove | Visualizer and diagnostic panel consume the original names/values interface; simulation uses that same interface | Install the new packages and launch configuration on the RDK; run the documented real startup sequence |
-| Clear missing-data behavior | NaN and stopped-stream behavior implemented and exercised in simulation | Real failed chips can retain old finite values; per-chip validity remains unresolved |
+| Clear missing-data behavior | Failed or unmeasured chips now export NaN; display paths mark nonfinite values unknown, with a separate stream timeout | Rebuild/deploy the repaired SPI plugin and verify real failures/recovery; the old binary still freezes values |
 
 The 54 entries are electrical slots (9 devices × 6), while the 47 surface regions are 22 palm
 and 25 finger regions. The remaining seven slots have no surface patch in this model. Real
@@ -54,9 +56,10 @@ included AArch64 plugins and executable were built against that Jazzy userspace.
 Humble or combine these prebuilt artifacts with another ROS distribution: `ros2_control` plugin
 APIs, launch behavior, and C++ ABI dependencies may not match.
 
-If ABI-dependent source changes, rebuild the complete affected dependency set with the same
-RZ/V2H Jazzy sysroot. The current repository update reuses the existing binaries; it does not
-claim a new cross-build.
+Rebuild changed native source and its affected dependency set with the same RZ/V2H Jazzy
+sysroot. The review fix changes `ssc_tactile_hand_ros2_control`: its old binary must be replaced
+to obtain failed-chip NaN output. Other compatible unchanged binaries can be reused. The
+checked-in `install/` has not been replaced and is not a build of these fixes.
 
 ## System design
 
@@ -167,16 +170,18 @@ and post-boot enumeration. The included DTB also assumes the WS125 SDHI0 supply 
 
 ## Packages to install for the Foxglove update
 
-The Foxglove implementation did not change the native source of the tactile driver, Inspire
-driver or state broadcaster. Existing compatible Jazzy/AArch64 binaries can be reused.
+The initial Foxglove implementation left native code unchanged. The subsequent fault-validity
+fix changes the tactile driver C++; rebuild that plugin. Inspire motor control and the state
+broadcaster remain unchanged and their compatible Jazzy/AArch64 binaries can be reused.
 
 | Package/component | Required for real hardware display? | This update requires |
 | --- | --- | --- |
+| `ssc_tactile_hand_ros2_control` | Yes, for the repaired fault display | Cross-build and deploy the changed SPI plugin against the matching RZ/V2H Jazzy sysroot; include libgpiod 1.6 runtime |
 | `pnc_tactile_visualizer` | Yes | Install the new `ament_python` package, its entry point and mapping files, with target Jazzy/Python dependencies |
 | `inspire_rh56e2_hand_bringup` | Yes, for the documented shared-bridge startup | Reinstall the updated launch/config resources; this package has no native compile target |
 | `pnc_hand_demo` | No; optional simulation | Install the new `ament_python` package only where the demo will run |
 | `foxglove_bridge` | Yes | Reuse an installed compatible target version, or supply its Jazzy/AArch64 package if absent |
-| `foxglove/foxglove_inspire_hand_panels` | On the display computer | TypeScript/npm packaging into `.foxe`; extension 1.1.1 is included and does not use xbuild |
+| `foxglove/foxglove_inspire_hand_panels` | On the display computer | TypeScript/npm packaging into `.foxe`; extension 1.1.2 is included and does not use xbuild |
 
 The two bringup changes are an optional `launch_foxglove` switch (default `true`) and
 position-only mock joint feedback. The real controller configuration is unchanged. Setting
@@ -184,9 +189,9 @@ position-only mock joint feedback. The real controller configuration is unchange
 Real startup currently uses separate motion, tactile, visualizer and bridge commands; the
 original motion launch does not automatically start the tactile visualizer.
 
-These updates need correct target installation, not an unconditional rebuild of every C++
-package. Use the existing RZ/V2H Jazzy xbuild/target environment to prepare an overlay with the
-new Python entry points, ROS package index and resources. Confirm the board's Python/ROS
+Use the existing RZ/V2H Jazzy xbuild/target environment to rebuild the tactile plugin and prepare
+an overlay with the new Python entry points, ROS package index and resources. This does not
+require recompiling unrelated unchanged C++ packages. Confirm the board's Python/ROS
 dependencies. The Linux demo build has been checked; this target overlay has not yet been
 built/deployed in the RZ/V2H xbuild environment for this update.
 
@@ -195,7 +200,7 @@ built/deployed in the RZ/V2H xbuild environment for this update.
 Stage all packages under `src/` in the standard Renesas Ubuntu xbuild workspace, install sysroot
 dependencies, then build the affected dependency closures against the RZ/V2H Jazzy sysroot.
 The following is the broad build including the optional demo, not the minimum work required
-for the current documentation/visualization update:
+for running only the real acquisition/display path:
 
 ```bash
 sysroot-rosdep-install /home/ubuntu/ros2_ws

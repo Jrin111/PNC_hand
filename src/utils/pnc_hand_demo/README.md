@@ -77,8 +77,11 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s test -v
 ```
 
 These tests check data ordering, invalid input, NaN fault/recovery and repeatable
-scenarios. They do not verify ROS discovery, the loaded controller plugins,
-Foxglove rendering or physical sensing; those require the appropriate runtime.
+scenarios. An in-memory ROS substitute also checks that the smoke script creates
+only the simulated tactile publisher, including failure cleanup, and rejects a
+real hardware URDF even under `python3 -O`. These tests do not verify ROS discovery,
+the loaded controller plugins, Foxglove rendering or physical sensing; those
+require the appropriate runtime.
 
 With the default left-hand demo running, execute the opt-in ROS integration check
 from the workspace root in another sourced terminal:
@@ -87,10 +90,17 @@ from the workspace root in another sourced terminal:
 ROS_DOMAIN_ID=77 python3 src/utils/pnc_hand_demo/test/demo_runtime_smoke.py
 ```
 
-The script waits for fresh demo heartbeats and verifies the mock-only URDF before
-sending commands. It checks 162 named interfaces, 47 patches and their TF chains,
-simultaneous independent colors, NaN chip faults and recovery, then joint position
-feedback and patch motion through TF. It restores tactile and mock joint commands
-to zero. Each check has a 15 s timeout (`--timeout` can change it); another demo
-domain also needs `--expected-domain`. This verifies ROS messages and mock behavior,
-not the final Foxglove pixels, physical force, or real motor arrival.
+The script waits for fresh demo heartbeats and explicitly verifies the mock-only
+URDF before publishing solely to `/pnc_demo/tactile_values`. It checks 162 named
+interfaces, 47 patches and their TF chains, simultaneous independent colors, NaN
+chip faults and recovery. Joint positions and TF are checked passively: this script
+does not create a joint command publisher, move joints, or test command tracking.
+On normal exit or failure it attempts to restore only simulated tactile input to
+zero, provided the demo remains verified and alive.
+
+Each check has a 15 s timeout (`--timeout` can change it); another demo domain also
+needs `--expected-domain`. A discovered second `/robot_description` publisher is
+rejected, but a publisher count cannot prove that a ROS domain contains only a
+simulator. Keep the demo domain separate from physical hardware. These checks
+verify tactile ROS messages and passive feedback availability, not moving-patch
+behavior, final Foxglove pixels, physical force, or real motor arrival.

@@ -39,16 +39,20 @@ export function unknownFrame(): TactileFrame {
 export class TactileDecoder {
   private indexByKey = new Map<string, number>();
   private namesReceived = false;
+  private keyCount = 0;
 
   reset(): void {
     this.indexByKey.clear();
     this.namesReceived = false;
+    this.keyCount = 0;
   }
 
   setNames(message: unknown): void {
     this.reset();
     const keys = field(message, "keys");
     if (!Array.isArray(keys)) return;
+    // Values must match every source slot, including unrecognized and duplicate keys.
+    this.keyCount = keys.length;
     const duplicates = new Set<string>();
     keys.forEach((key: unknown, index: number) => {
       if (typeof key !== "string" || !/^raa[0-8]_ch[0-5]\/(raw_i|raw_q|value)$/.test(key)) return;
@@ -65,6 +69,7 @@ export class TactileDecoder {
     result.names_received = this.namesReceived;
     const raw = field(message, "values");
     if (!Array.isArray(raw) && !(raw instanceof Float64Array)) return result;
+    if (raw.length !== this.keyCount) return result;
     for (const channel of result.channels) {
       for (const iface of INTERFACES) {
         const index = this.indexByKey.get(`${channel.name}/${iface}`);

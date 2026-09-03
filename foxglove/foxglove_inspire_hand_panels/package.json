@@ -4,7 +4,7 @@
   "description": "Foxglove panels for Inspire hand commands and name-keyed 54-channel PNC tactile diagnostics with isolated simulation injection.",
   "publisher": "Renesas-UX-SST",
   "homepage": "",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "license": "Apache-2.0",
   "main": "./dist/extension.js",
   "keywords": [

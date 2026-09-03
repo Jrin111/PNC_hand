@@ -17,6 +17,11 @@ and inspect [PR #1](https://github.com/Jrin111/PNC_hand/pull/1). The implementat
 Check the current branch and PR state before reviewing. The guide invites checking and correcting
 these recorded conclusions; documentation updates are not new runtime or hardware validation.
 
+The subsequent user-authorized review fixes change runtime behavior: failed-chip NaN output
+in the tactile C++ plugin, tactile-only smoke injection, and strict frame lengths in extension
+1.1.2. Rebuild the tactile plugin in the matching target xbuild environment before deployment;
+the preserved `install/` outputs do not include these fixes.
+
 ## Background and objective
 
 The objective is one ROS 2 system on the Renesas RZ/V2H RDK that retains the proven Inspire
@@ -52,7 +57,7 @@ topic/parameter behavior and C++ plugin ABI differ across ROS distributions.
   force-threshold, and motion-mode behavior. Restore its original bringup, description, meshes,
   and gripper adapter rather than replacing the motion stack with a tactile-only launch.
 - In each control-cycle `read()`, sequentially scan active devices and publish a 54-slot snapshot.
-  Healthy sampled devices update; failed devices currently retain their earlier values. Map six
+  Healthy sampled devices update; unsampled/failed devices export NaN for that frame. Map six
   physical channels per RAA device to stable logical names and export `raw_i`, `raw_q`, and
   filtered `value` interfaces. A published snapshot is not proof of 54 new simultaneous samples.
 - Hold every GPIO chip-select HIGH except during its selected SPI transaction. Check the response
@@ -111,22 +116,23 @@ motion launch, and changes mock joint feedback to position-only (unmeasured forc
 remain unknown). These additions are not present in the old `install/` tree. Development builds
 use a separate install prefix; do not overwrite the target artifacts with a desktop build.
 
-### Minimum target installation for this update
+### Minimum target installation for the current source
 
 | Package/component | Required action |
 | --- | --- |
+| `ssc_tactile_hand_ros2_control` | Rebuild/deploy the changed C++ plugin with matching RZ/V2H Jazzy xbuild and libgpiod 1.6; old binaries retain the fault freeze |
 | `pnc_tactile_visualizer` | Install the new Python ROS package, mapping files and target Jazzy dependencies |
 | `inspire_rh56e2_hand_bringup` | Reinstall launch/config resources for `launch_foxglove` and position-only mock feedback |
 | `pnc_hand_demo` | Optional Python simulation package; not needed by the real acquisition/display path |
 | `foxglove_bridge` | Confirm a compatible Jazzy target package is present; supply one if missing |
-| Foxglove panel extension | Install the packaged 1.1.1 `.foxe` on the display computer; no xbuild step |
+| Foxglove panel extension | Install the packaged 1.1.2 `.foxe` on the display computer; no xbuild step |
 
-No native driver/broadcaster source changed in the Foxglove implementation commit. Reuse the
-existing compatible AArch64 outputs; there is no requirement to recompile every unchanged C++
-package merely to install Python nodes or launch files. Target Python entry points, package
-index/resources and dependencies still need correct installation. This update has not produced
-a new RZ/V2H xbuild overlay. If later fault/recovery changes affect native source or interfaces,
-build and deploy the complete affected dependency set and keep source/artifacts paired.
+No native driver/broadcaster source changed in the initial Foxglove implementation commit.
+The later review fix changes tactile driver C++, so rebuild that plugin and its affected
+dependency set. The 162 state interface names/types are unchanged; the unchanged Inspire and
+broadcaster binaries can be reused when compatible. Python entry points, package index/resources
+and dependencies still need correct installation. No new RZ/V2H xbuild overlay has been produced;
+the old `install/` remains a historical artifact set, not the output of the repaired source.
 
 ### Foxglove software implementation
 
@@ -146,7 +152,8 @@ The original NanoSen manual and finger Gerber establish 25 finger + 22 palm regi
 Inspire CAD does not include the added PNC carrier; mounting coordinates, board rotation and final
 electrical mapping remain unverified. Real `channel` fields are null and `mapping_verified=false`;
 only the explicit demo profile uses example wiring. A verified real profile requires all 47 actual
-channel assignments. Simulated NaN faults do not resolve the real plugin's stale-value issue below.
+channel assignments. The repaired plugin now marks acquisition failures NaN; only deploying
+the rebuilt plugin enables this on real hardware. Simulation does not certify SPI recovery.
 
 The visualization is integrated with the existing acquisition interface at source level. Real
 SPI `read()` updates 54 channels with `raw_i`, `raw_q`, and `value` (162 state interfaces);
@@ -172,15 +179,15 @@ but the panel's current color scale is fixed at 0..1 and may saturate for unnorm
 responses; 3D colors have configurable range/gain/offset. Mapping, response range and physical
 acquisition acceptance remain open even though ROS/mock and Foxglove GUI integration passed.
 
-Validation performed for this iteration:
+Historical validation of the initial implementation (extension 1.1.1):
 
 - Five visualization core/geometry tests and eight simulator-model tests pass without ROS.
 - Nine extension tests, TypeScript checking and production packaging pass; the installed local
   extension is version 1.1.1 and its JavaScript matches the tested production build exactly.
 - The 22 automated tests are the 5 + 8 + 9 checks above. TypeScript checking, the live ROS
   acceptance script and actual GUI interaction are separate forms of validation. These results
-  were recorded during the implementation; this review-documentation update does not rerun or
-  expand runtime tests, and the manual observations are not checked-in hardware logs.
+  were recorded during the implementation; they are not a rerun of the later review fixes,
+  and the manual observations are not checked-in hardware logs.
 - A local Linux/AArch64 ROS 2 Jazzy container built the six-package demo dependency closure;
   no real SPI tactile package or RZ/V2H target artifact was used or overwritten.
 - The live ROS integration check passed, including 162 exact keys, 47 valid TF
@@ -201,6 +208,40 @@ Validation performed for this iteration:
 - The actual Foxglove client successfully connects at `ws://127.0.0.1:8765`, renders the model
   and markers, and publishes commands through the bridge. This supersedes the earlier
   inconclusive standalone Node WebSocket probe. Refresh the view after extension updates.
+
+### Validation of the review repairs
+
+- Built the complete `ssc_tactile_hand_ros2_control` package, including the real SPI shared
+  library, in the existing Linux/AArch64 ROS 2 Jazzy container (hardware_interface 4.45.2,
+  libgpiod 1.6.3). CTest passed 2/2 targets: existing protocol processing and new hardware
+  validity tests. The latter executes the production hardware interface with only transport
+  replaced by a fake bus: initial/inactive states, first chip failure, healthy-chip progress,
+  isolation, unsuccessful/successful recovery, filter/tare preservation, disabled devices,
+  closed transport, and all three chip-select fatal paths. No physical devices are opened.
+- Extension 1.1.2: 12/12 tests, TypeScript checking, build and packaging passed. Short and long
+  arrays/Float64Array frames and changed-name layouts are covered; the packaged bundle matches
+  the production build. Version 1.1.2 is installed on the local display computer; installed JS
+  matches the packaged JS byte-for-byte. Refresh Foxglove to load it. The `.foxe` is in
+  `foxglove/foxglove_inspire_hand_panels/`.
+- Simulator package: 15/15 offline Python tests (8 model + 7 smoke-isolation tests) passed.
+  The smoke script runs against fake rclpy callbacks; tests verify its only publisher and
+  normal/exception cleanup target `/pnc_demo/tactile_values`, rejection of real URDF even with
+  `python -O`, duplicate descriptions, absent heartbeat and incorrect domain. No ROS commands
+  were sent by these tests. The visualizer's 5 core tests also passed for NaN/gray behavior.
+- Build/test files are separate in the review container: `/tmp/pnc-validity-build`,
+  `/tmp/pnc-validity-install`, `/tmp/pnc-validity-log`, `/tmp/pnc-validity-test-log`.
+  To reproduce in a Jazzy development workspace with dependencies installed:
+
+  ```bash
+  colcon build --base-paths src --packages-select ssc_tactile_hand_ros2_control \
+    --build-base build --install-base install_local --cmake-args -DBUILD_TESTING=ON
+  colcon test --build-base build --packages-select ssc_tactile_hand_ros2_control
+  colcon test-result --test-result-base build --verbose
+  ```
+
+This is a Linux/Jazzy native build with a fake bus, not a matching RZ/V2H sysroot xbuild,
+physical SPI validation, new GUI motion acceptance or a rebuilt Compose image. The source fixes
+are available; target rebuild/deployment, physical mapping, calibration and acceptance are pending.
 
 ## Required target acceptance
 
@@ -228,10 +269,22 @@ An external source review identified six items. Three are accepted and addressed
 2. Jazzy controller parameters must be passed to the broadcaster spawner with `--param-file`.
 3. Deployment instructions must use Jazzy rather than Humble.
 
-The following code-level concerns are credible but intentionally not changed yet:
+The later Claude review led to three accepted repairs:
 
-- Stale tactile values currently lack an agreed validity contract. Decide between NaN values,
-  explicit online/age interfaces, or a hardware error policy before changing the interface.
+- Failed, isolated, disabled or not-yet-sampled chips export NaN in all three interfaces of all
+  six channels, starting at the first failed acquisition. Successful complete reads restore
+  measurements; global errors/deactivation invalidate every exported state. Integer EMA/tare
+  history remains separate. This replaces the earlier failed-chip last-value hold policy.
+- The smoke script only publishes to `/pnc_demo/tactile_values`, including cleanup; it no longer
+  creates a motor command publisher or tests active joint motion. Mock URDF validation is an
+  explicit runtime check even under `python -O`. Domain/heartbeat checks remain, with a rejection
+  of already-discovered duplicate descriptions as an additional check, not proof of isolation.
+- Extension 1.1.2 requires `values.length` to match the full received `keys.length`; malformed
+  lengths make every measurement unknown. This does not identify same-length cross-generation
+  names/values reorderings because the existing message contract has no shared generation ID.
+
+The following concerns remain outside these repairs:
+
 - An acquired I sample of zero retains that channel's earlier filtered I value before subtracting
   tare, even when its raw I/Q fields update. Review whether this firmware-compatible policy is
   appropriate for physical release/invalid-sample behavior; it is separate from a failed-chip
@@ -241,8 +294,8 @@ The following code-level concerns are credible but intentionally not changed yet
 - Recovery selection can be unfair when `recovery_interval_frames=1`; the production default is
   40, but a rotating cursor is appropriate if interval 1 must be supported.
 
-These changes alter runtime semantics and require a new matching AArch64 build. Changing only the
-source while continuing to ship the old plugin would make the repository internally inconsistent.
+The accepted NaN fix already requires a matching AArch64 plugin rebuild. Any later native
+recovery changes also require rebuilding; do not deploy old outputs as if they match new source.
 
 ## Known timing trade-off
 
@@ -279,3 +332,4 @@ recovery state machine and rebuild the plugin.
 | 2026-09-03 | Documented the real SPI-to-Foxglove source integration, independent multi-contact behavior, 54 electrical slots versus 47 physical zones, and the remaining mapping/range/build/startup requirements; no real-hardware validation is claimed. |
 | 2026-09-03 | Added an independent Claude/engineer review guide and clarified bringup changes, minimum target installation, evidence boundaries, zero-I retention, and board/SPI naming checks. Documentation only; no runtime behavior, target artifacts or validation status changed. |
 | 2026-09-03 | Added CLAUDE.md with the user's main/Explore/Test/Review agent roles, independent architecture review requirements, original-package reading order, focused testing and project-state handoff rules; aligned the review guide with existing user authorization. Documentation only. |
+| 2026-09-03 | Addressed review findings: failed/unmeasured chip states become NaN in the real driver; smoke publishes only simulated tactile input; extension 1.1.2 rejects mismatched frame lengths. Target plugin rebuild/deployment and hardware acceptance remain pending. |

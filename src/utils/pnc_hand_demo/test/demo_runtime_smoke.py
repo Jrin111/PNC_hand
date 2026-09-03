@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Bounded, opt-in integration check for the running left-hand demo only.
 
-Run this source file in a Jazzy environment after hand_demo.launch.py. It sends
-commands only after observing fresh demo heartbeats and a mock-only URDF, and
-restores simulated contacts and joint commands to zero before exiting.
+Run this source file in a Jazzy environment after hand_demo.launch.py. It writes
+only /pnc_demo/tactile_values after observing fresh demo heartbeats and a mock-only
+URDF, and restores simulated contacts to zero before exiting. Joint feedback and
+TF are observed passively; no joint command publisher is created.
 """
 
 import argparse
@@ -57,6 +58,20 @@ def marker_color(marker):
     return color.r, color.g, color.b, color.a
 
 
+def validate_mock_description(description):
+    """Reject non-demo descriptions even when Python assertions are disabled."""
+    robot = ET.fromstring(description)
+    plugins = [(element.text or '').strip()
+               for element in robot.findall('./ros2_control/hardware/plugin')]
+    if not plugins or any(plugin != 'mock_components/GenericSystem' for plugin in plugins):
+        raise RuntimeError(f'Refusing simulated input: expected only GenericSystem hardware, got {plugins}')
+    if 'left' not in robot.attrib.get('name', ''):
+        raise RuntimeError('Refusing simulated input: expected left-hand URDF')
+    if '/meshes/left/' not in description or '/meshes/right/' in description:
+        raise RuntimeError('Refusing simulated input: expected exclusively left-hand meshes')
+    return robot
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--timeout', type=float, default=15.0, help='Seconds per bounded check')
@@ -85,7 +100,6 @@ def main(argv=None):
             self.messages, self.received, self.counts, self.transforms = {}, {}, {}, {}
             self.authorized_description = None
             self.armed = False
-            self.tf_count = 0
             reliable = QoSProfile(depth=20, reliability=ReliabilityPolicy.RELIABLE)
             latched = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                                  durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -104,8 +118,6 @@ def main(argv=None):
             self.create_subscription(TFMessage, '/tf_static', self.on_tf, latched)
             self.tactile_publisher = self.create_publisher(
                 Float64MultiArray, '/pnc_demo/tactile_values', reliable)
-            self.joint_publisher = self.create_publisher(
-                Float64MultiArray, '/inspire_rh56e2_hand_joint_position_controller/commands', reliable)
 
         def record(self, key, message):
             self.messages[key] = message
@@ -115,7 +127,6 @@ def main(argv=None):
         def on_tf(self, message):
             for transform in message.transforms:
                 self.transforms[transform.child_frame_id] = transform
-            self.tf_count += 1
 
         def wait(self, label, predicate, publish=None, timeout=None):
             deadline = time.monotonic() + (timeout or arguments.timeout)
@@ -139,17 +150,19 @@ def main(argv=None):
 
         def require_demo(self):
             if not self.armed or not self.demo_alive():
-                raise AssertionError('Refusing commands: no fresh, verified demo heartbeat')
+                raise RuntimeError('Refusing simulated input: no fresh, verified demo heartbeat')
             if self.messages['description'].data != self.authorized_description:
-                raise AssertionError('Refusing commands: robot_description changed after mock verification')
+                raise RuntimeError('Refusing simulated input: robot_description changed after mock verification')
+            self.reject_multiple_description_sources()
+
+        def reject_multiple_description_sources(self):
+            # Discovery is not a safety proof; this only rejects a known mixed graph.
+            if self.count_publishers('/robot_description') > 1:
+                raise RuntimeError('Refusing simulated input: multiple robot_description publishers discovered')
 
         def publish_tactile(self, values):
             self.require_demo()
             self.tactile_publisher.publish(Float64MultiArray(data=values))
-
-        def publish_joints(self, values):
-            self.require_demo()
-            self.joint_publisher.publish(Float64MultiArray(data=values))
 
         def values_match(self, desired):
             message = self.messages.get('values')
@@ -170,13 +183,12 @@ def main(argv=None):
             return all(name in markers and near(marker_color(markers[name]), color)
                        for name, color in desired.items())
 
-        def joints_match(self, desired):
+        def joint_positions_available(self):
             message = self.messages.get('joints')
-            if message is None:
+            if message is None or len(message.name) != len(message.position):
                 return False
             actual = dict(zip(message.name, message.position))
-            return all(joint in actual and math.isclose(actual[joint], target, abs_tol=0.01)
-                       for joint, target in zip(JOINTS, desired))
+            return all(joint in actual and math.isfinite(actual[joint]) for joint in JOINTS)
 
         def point_in_world(self, marker):
             if not marker.points:
@@ -215,28 +227,21 @@ def main(argv=None):
             if not self.armed:
                 return
             if not self.demo_alive():
-                print('RESTORE SKIPPED: demo heartbeat expired; no further commands sent', file=sys.stderr)
+                print('RESTORE SKIPPED: demo heartbeat expired; no further simulated input sent', file=sys.stderr)
                 return
-            tactile_zero, joints_zero = [0.0] * 54, [0.0] * 6
-            def publish():
-                self.publish_tactile(tactile_zero)
-                self.publish_joints(joints_zero)
-            self.wait('restore simulated tactile and mock joints to zero',
-                      lambda: self.values_match(tactile_zero) and self.joints_match(joints_zero),
-                      publish=publish, timeout=5.0)
+            tactile_zero = [0.0] * 54
+            self.wait('restore simulated tactile input to zero',
+                      lambda: self.values_match(tactile_zero),
+                      publish=lambda: self.publish_tactile(tactile_zero), timeout=5.0)
 
         def run(self):
             self.wait('live demo heartbeat (a latched true alone is insufficient)', self.demo_alive)
-            self.wait('robot_description and command subscribers', lambda:
+            self.wait('robot_description and simulated tactile subscriber', lambda:
                       'description' in self.messages
-                      and self.tactile_publisher.get_subscription_count() > 0
-                      and self.joint_publisher.get_subscription_count() > 0)
+                      and self.tactile_publisher.get_subscription_count() > 0)
             description = self.messages['description'].data
-            robot = ET.fromstring(description)
-            plugins = [element.text.strip() for element in robot.findall('./ros2_control/hardware/plugin')]
-            assert plugins and all(plugin == 'mock_components/GenericSystem' for plugin in plugins), plugins
-            assert 'left' in robot.attrib.get('name', ''), 'Expected left-hand URDF'
-            assert '/meshes/left/' in description and '/meshes/right/' not in description
+            robot = validate_mock_description(description)
+            self.reject_multiple_description_sources()
             self.authorized_description, self.armed = description, True
             print('PASS left-hand URDF contains only GenericSystem hardware', flush=True)
 
@@ -281,40 +286,12 @@ def main(argv=None):
                       and self.colors_match({first_name: LOW_CONTACT, second_name: HIGH_CONTACT}),
                       publish=lambda: self.publish_tactile(contacts))
 
-            zero_joints = [0.0] * 6
-            self.wait('mock position starts at commanded zero', lambda: self.joints_match(zero_joints),
-                      publish=lambda: self.publish_joints(zero_joints))
-            parent_joints = {joint.find('child').attrib['link']: joint for joint in robot.findall('joint')}
-            def moving_frame(frame):
-                visited = set()
-                while frame in parent_joints and frame not in visited:
-                    visited.add(frame)
-                    joint = parent_joints[frame]
-                    if joint.attrib['name'] in JOINTS:
-                        return True
-                    frame = joint.find('parent').attrib['link']
-                return False
-            moving = next(zone for zone in zones if moving_frame(zone['frame_id']))
-            moving_name = 'pnc/' + moving['id']
-            before_marker = self.markers_by_name()[moving_name]
-            before_world = self.point_in_world(before_marker)
-            before_tf_count = self.tf_count
-            target = [0.2, 0.25, 0.4, 0.35, 0.3, 0.25]
-            def patch_moved():
-                if not self.joints_match(target) or self.tf_count <= before_tf_count:
-                    return False
-                marker = self.markers_by_name()[moving_name]
-                after_world = self.point_in_world(marker)
-                return math.dist(before_world, after_world) > 1e-4
-            self.wait('six mock joint positions and TF move a patch in world coordinates', patch_moved,
-                      publish=lambda: self.publish_joints(target))
-            after_marker = self.markers_by_name()[moving_name]
-            assert before_marker.header.frame_id == after_marker.header.frame_id
-            assert list(before_marker.points) == list(after_marker.points), 'Patch must remain fixed in link coordinates'
+            self.wait('six finite joint positions observed passively', self.joint_positions_available)
             joints_message = self.messages['joints']
             assert all(not math.isfinite(value) for value in joints_message.velocity), 'Mock velocity must be unavailable'
             assert all(not math.isfinite(value) for value in joints_message.effort), 'Mock effort must be unavailable'
-            print('PASS patch geometry remains link-local; no measured mock velocity/effort is fabricated', flush=True)
+            print('PASS passive joint feedback: no measured mock velocity/effort is fabricated', flush=True)
+            print('NOT RUN joint motion or command tracking; joint feedback and TF checks are passive', flush=True)
 
     rclpy.init()
     node = DemoSmoke()
@@ -334,7 +311,7 @@ def main(argv=None):
     if failed is not None:
         print(f'FAIL {type(failed).__name__}: {failed}', file=sys.stderr, flush=True)
         return 1
-    print('PASS full ROS demo smoke check (transport and mock behavior; no physical hardware validation)', flush=True)
+    print('PASS tactile ROS demo smoke check (passive joint/TF checks; no motor commands or physical validation)', flush=True)
     return 0
 
 

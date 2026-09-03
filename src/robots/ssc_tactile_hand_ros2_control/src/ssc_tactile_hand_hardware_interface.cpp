@@ -459,6 +459,7 @@ hardware_interface::return_type SscTactileHandHardwareInterface::read(
 {
   (void)time;
   if (!active_ || !transport_ || !transport_->is_open()) {
+    reset_exported_state();
     if (transport_) {
       (void)transport_->ensure_all_chip_selects_high();
     }
@@ -496,6 +497,7 @@ hardware_interface::return_type SscTactileHandHardwareInterface::read(
       if (!transport_->ensure_all_chip_selects_high()) {
         RCLCPP_ERROR(logger, "cannot guarantee that every chip-select line is HIGH");
         active_ = false;
+        reset_exported_state();
         return hardware_interface::return_type::ERROR;
       }
       if (!recovered) {
@@ -514,6 +516,7 @@ hardware_interface::return_type SscTactileHandHardwareInterface::read(
       if (!transport_->ensure_all_chip_selects_high()) {
         RCLCPP_ERROR(logger, "cannot guarantee that every chip-select line is HIGH");
         active_ = false;
+        reset_exported_state();
         return hardware_interface::return_type::ERROR;
       }
       ++consecutive_failures_[chip];
@@ -524,8 +527,8 @@ hardware_interface::return_type SscTactileHandHardwareInterface::read(
         recovery_countdown_[chip] = recovery_interval_frames_;
         RCLCPP_WARN(
           logger,
-          "isolating chip %zu after %zu consecutive failures (%llu total); retaining its last "
-          "valid samples and retrying after %zu frames",
+          "isolating chip %zu after %zu consecutive failures (%llu total); publishing unknown "
+          "samples and retrying after %zu frames",
           chip, consecutive_failures_[chip],
           static_cast<unsigned long long>(total_failures_[chip]), recovery_interval_frames_);
       } else {
@@ -533,6 +536,7 @@ hardware_interface::return_type SscTactileHandHardwareInterface::read(
         if (!transport_->ensure_all_chip_selects_high()) {
           RCLCPP_ERROR(logger, "cannot guarantee that every chip-select line is HIGH");
           active_ = false;
+          reset_exported_state();
           return hardware_interface::return_type::ERROR;
         }
         if (!realigned) {
@@ -551,9 +555,15 @@ hardware_interface::return_type SscTactileHandHardwareInterface::read(
     sample_valid[chip] = true;
   }
 
-  DoubleFrame next_raw_i = raw_i_state_;
-  DoubleFrame next_raw_q = raw_q_state_;
-  DoubleFrame next_value = value_state_;
+  // Only a complete successful chip read may populate this frame. Never republish
+  // a previous finite measurement with the broadcaster's new timestamp. Keep the
+  // integer filter/tare history separately so NaN cannot enter signal processing.
+  DoubleFrame next_raw_i;
+  for (auto & chip : next_raw_i) {
+    chip.fill(std::numeric_limits<double>::quiet_NaN());
+  }
+  DoubleFrame next_raw_q = next_raw_i;
+  DoubleFrame next_value = next_raw_i;
   EmaFrame next_ema = ema_accumulator_;
   InitializedFrame next_initialized = ema_initialized_;
   RawFrame next_last_valid = last_valid_i_;
@@ -629,9 +639,11 @@ void SscTactileHandHardwareInterface::reset_runtime_state() noexcept
 
 void SscTactileHandHardwareInterface::reset_exported_state() noexcept
 {
-  raw_i_state_ = {};
-  raw_q_state_ = {};
-  value_state_ = {};
+  for (auto & chip : raw_i_state_) {
+    chip.fill(std::numeric_limits<double>::quiet_NaN());
+  }
+  raw_q_state_ = raw_i_state_;
+  value_state_ = raw_i_state_;
 }
 
 void SscTactileHandHardwareInterface::reset_timing() noexcept

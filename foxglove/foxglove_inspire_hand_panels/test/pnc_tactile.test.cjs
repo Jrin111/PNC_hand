@@ -31,12 +31,53 @@ test("missing, duplicate, malformed, and nonfinite slots stay Unknown; real zero
   const decoder = new TactileDecoder();
   decoder.setNames({ keys: ["raa0_ch0/value", "raa0_ch0/raw_i", "raa0_ch0/raw_q",
     "raa0_ch1/value", "raa0_ch1/value", "raa0_ch2/value", "raa0_ch3/value", "raa0_ch4/value"] });
-  const channels = decoder.decode({ values: [0, NaN, Infinity, 10, 20, "0", -Infinity] }).channels;
+  const channels = decoder.decode({ values: [0, NaN, Infinity, 10, 20, "0", -Infinity, undefined] }).channels;
   assert.equal(channels[0].value, 0);
   assert.equal(channels[0].value_known, true);
   assert.equal(channels[0].raw_i_known, false);
   assert.equal(channels[0].raw_q_known, false);
   assert(channels.slice(1, 6).every((channel) => Number.isNaN(channel.value) && !channel.value_known));
+});
+
+test("short and long values frames make every measurement Unknown for arrays and Float64Array", () => {
+  const decoder = new TactileDecoder();
+  decoder.setNames({ keys: ["raa0_ch0/raw_i", "raa0_ch0/raw_q", "raa0_ch0/value"] });
+  for (const values of [[1, 2], [1, 2, 3, 4]]) {
+    for (const raw of [values, Float64Array.from(values)]) {
+      const frame = decoder.decode({ values: raw });
+      assert.equal(frame.names_received, true);
+      assert(frame.channels.every((channel) => ["raw_i", "raw_q", "value"].every((field) =>
+        Number.isNaN(channel[field]) && !channel[`${field}_known`])));
+    }
+  }
+});
+
+test("frame length uses all source keys while valid subsets and unrelated fields remain usable", () => {
+  const decoder = new TactileDecoder();
+  decoder.setNames({ keys: ["raa0_ch0/value", "unrecognized", null,
+    "raa0_ch1/value", "raa0_ch1/value", "raa0_ch2/value"] });
+  const channels = decoder.decode({ values: [0.2, 1, 2, 0.4, 0.4, 0.8] }).channels;
+  assert.equal(channels[0].value, 0.2);
+  assert.equal(channels[0].value_known, true);
+  assert.equal(channels[0].raw_i_known, false);
+  assert.equal(channels[1].value_known, false);
+  assert.equal(channels[2].value, 0.8);
+  assert.equal(channels[2].value_known, true);
+  // Only two unique recognized keys survive; their count is not the source frame length.
+  assert(decoder.decode({ values: [0.2, 0.8] }).channels.every((channel) => !channel.value_known));
+});
+
+test("names reconfiguration rejects an older frame of a different length and accepts the new schema", () => {
+  const decoder = new TactileDecoder();
+  decoder.setNames({ keys: ["raa0_ch0/value", "raa0_ch1/value"] });
+  assert.equal(decoder.decode({ values: [0.2, 0.8] }).channels[1].value, 0.8);
+  decoder.setNames({ keys: ["raa8_ch5/value"] });
+  const stale = decoder.decode({ values: Float64Array.from([0.2, 0.8]) });
+  assert(stale.channels.every((channel) => !channel.value_known));
+  const current = decoder.decode({ values: Float64Array.from([0.6]) });
+  assert.equal(current.channels[0].value_known, false);
+  assert.equal(current.channels[53].value, 0.6);
+  assert.equal(current.channels[53].value_known, true);
 });
 
 test("new names replace the previous map; reset/reconnect cannot reuse old indexing", () => {

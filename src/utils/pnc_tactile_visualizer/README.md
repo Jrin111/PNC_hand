@@ -37,11 +37,18 @@ including the seven slots outside the 47-zone display.
 
 Input names and values default to `/tactile/tactile_hand_state_broadcaster/names`
 and `/values`. The decoder requires names, checks array length, and accepts
-NaN as unknown. A 0.5-second stream timeout grays all patches. The current real
-hardware plugin can republish old finite values after a device failure; this
-visualizer cannot determine per-chip health from that stream. Its status topic
-explicitly records `device_health=not_provided_by_hardware` until that backend
-contract is implemented. Simulated faults do publish NaN and are visibly gray.
+NaN as unknown. A 0.5-second stream timeout grays all patches. The repaired real
+hardware plugin exports NaN for a chip without a complete successful acquisition,
+so its mapped patches become gray while healthy chips continue updating. This
+requires rebuilding/deploying `ssc_tactile_hand_ros2_control`; the old checked-in
+`install/` plugin still republishes frozen values after failures, which a display
+cannot detect from message timestamps alone. Simulated NaN faults exercise the
+same unknown-color path but do not prove physical SPI recovery.
+
+The status field `device_health=not_provided_by_hardware` continues to mean there
+is no separate hardware health/age interface. NaN communicates measurement
+unavailability, not the reason. Successful zero-I retention and auto-tare behavior
+remain driver limitations; a finite value is not proof of physical sensor health.
 
 Pure Python verification (without ROS):
 

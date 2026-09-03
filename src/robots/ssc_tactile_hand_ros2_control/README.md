@@ -18,17 +18,16 @@ declare exactly these state interfaces:
 
 | Interface | Meaning |
 | --- | --- |
-| `raw_i` | Unsigned 16-bit RAA I result represented as a `double` |
-| `raw_q` | Unsigned 16-bit RAA Q result represented as a `double` |
-| `value` | Firmware-compatible EMA of I minus the tare baseline; no force unit is implied |
+| `raw_i` | Unsigned 16-bit RAA I result represented as a `double`, or NaN when unavailable |
+| `raw_q` | Unsigned 16-bit RAA Q result represented as a `double`, or NaN when unavailable |
+| `value` | Firmware-compatible EMA of I minus the tare baseline, or NaN when unavailable; no force unit is implied |
 
 The transport polls active devices and acquires each device's physical channels in the order
 0 through 5. The hardware interface maps them to logical channels with `{5, 0, 1, 2, 3, 4}`
 and commits the channel arrays after that polling cycle. Each successfully sampled device
-updates all six channels; failed or isolated devices retain their previous values while healthy
-devices continue updating. Slots belonging to inactive devices remain zero. The current state
-interfaces do not identify retained values as stale, so a new broadcaster timestamp does not
-prove that every device was sampled successfully.
+updates all six channels; failed or isolated devices export NaN while healthy devices continue
+updating. Slots belonging to inactive devices remain NaN. A fresh timestamp only indicates a
+new published frame; inspect each measurement's finiteness before using it.
 
 Multiple touched regions retain independent values in the same published frame. Polling does
 not impose a single-touch restriction, but the samples are taken sequentially rather than at
@@ -116,12 +115,27 @@ zero-sample branch accidentally changing the output's meaning.
 ## Failure and timing behavior
 
 An SPI, echo, CRC, or active-channel acquisition failure restores every requested CS line HIGH,
-logs chip/channel context with one-second throttling, and retains the affected chip's last valid
-samples. Other chips continue to update. After the configured consecutive-failure threshold the
+logs chip/channel context with one-second throttling, and exports NaN for all six channels of the
+affected chip (`raw_i`, `raw_q`, and `value`) in that same frame, including the first transient
+failure. Partial chip reads are discarded. Other chips continue to update. Internal integer
+EMA/tare history is kept separately; NaN never enters the filter. After the configured consecutive-failure threshold the
 chip is isolated and retried periodically; recovery reinitializes it and repeats tare or pipeline
 priming. A transient mid-frame failure also triggers a discarded channel-5 measurement before the
 next acquisition so the one-frame channel pipeline cannot resume from a misaligned state. Failure
 to restore all CS lines HIGH remains a fatal safety error.
+
+Inactive, not-yet-sampled, disabled, isolated and unsuccessfully recovered chips also export NaN.
+A complete successful chip read restores finite output; initialization alone does not. Global
+read errors and deactivation invalidate all exported states. The 162 interface names/types are
+unchanged: the existing broadcaster forwards NaN and both Foxglove display paths treat it as
+unknown, rather than displaying an old touch with a new message timestamp.
+If a fatal error stops the controller/broadcaster before it publishes again, the display's
+whole-stream timeout remains the fallback; writing NaN does not force an extra publication.
+
+This validity policy requires rebuilding and deploying this C++ plugin with the matching
+RZ/V2H Jazzy xbuild environment. The checked-in old `install/` plugin does not contain it.
+It does not change the separate successful-zero-I hold policy above, automatic re-tare during
+recovery, or recovery timing. Finite output alone is not a physical sensor-health certificate.
 
 Full-frame acquisitions are monitored continuously in 100-frame windows. Average and maximum
 times are logged for each window. Exceeding the nominal 25 ms / 40 Hz budget emits a warning but

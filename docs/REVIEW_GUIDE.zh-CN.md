@@ -56,11 +56,16 @@ gh pr view 1 --repo Jrin111/PNC_hand --json state,baseRefName,headRefName,headRe
 | `src/robots/inspire_rh56e2_hand_bringup/{launch,config}` | 原运动栈复用、bridge 开关、仅模拟反馈变更 |
 | `platform/rzv2h/{dts,patches,dtb}` | 引脚复用与电压假设、目标板型、源文件/DTB 对应性 |
 
-相对上述基线，本次**未修改原 SPI 采集、机械手驱动或 broadcaster 的 C++**。
+初始实现 `e5c4326` **未修改原 SPI 采集、机械手驱动或 broadcaster 的 C++**。
 运动 bringup 只改位置控制 launch 的 `launch_foxglove` 开关（默认仍为 true），
 以及 `controller_manager_mock.yaml` 仅发布 `position`，不伪造模拟测速/测力。
 新增两个 Python ROS 包，更新 TypeScript Foxglove 扩展、布局、模拟构建入口和文档。
 不要把这一差异范围理解为原 C++ 已经通过实机验收。
+
+后续评审修复已修改 `ssc_tactile_hand_ros2_control` 的 C++：未完成本轮完整采集的芯片输出
+NaN，起停及全局错误清除有效状态，健康芯片继续更新。原运动驱动和 broadcaster 未修改。
+另外，smoke 移除全部关节命令，只写模拟触觉；扩展 1.1.2 增加 names/values 长度检查。
+评审当前 HEAD 时请包含这些修复，不把上面的初始范围当作当前全部 diff。
 
 ## 4. 真实链路与模拟替换点
 
@@ -96,24 +101,26 @@ bridge 的大写 `.STL` 资源规则见 [Foxglove 使用说明的真实接入部
 
 | 包/产物 | 本次需要处理什么 |
 | --- | --- |
+| `ssc_tactile_hand_ros2_control` | 故障有效性修复改变 C++，必须用匹配 RZ/V2H Jazzy sysroot 的 xbuild 重编并部署 |
 | `pnc_tactile_visualizer` | 真实热力图必需；新增 ament Python 包，安装入口、配置、包索引及目标 ROS/Python 依赖 |
 | `inspire_rh56e2_hand_bringup` | 更新 launch/config 安装文件，获得 `launch_foxglove`；本次无该包 C++ 重编内容 |
 | `pnc_hand_demo` | 仅硬件前演示需要；Python 包，真实模式不启动 |
 | `foxglove_bridge` | 目标环境已有兼容 Jazzy 版本可复用；缺失时补齐对应架构/发行版版本 |
-| 原采集/运动/broadcaster/description/dexhand_utils | 在匹配目标 ABI 和依赖的前提下复用既有输出；不是无条件承诺任意镜像可运行 |
-| `.foxe` 扩展 | 电脑侧 npm 构建/安装，当前 1.1.1；不需要 RZ/V2H 交叉编译 |
+| 未改的运动/broadcaster/description/dexhand_utils | 在匹配目标 ABI 和依赖的前提下复用既有输出；不是无条件承诺任意镜像可运行 |
+| `.foxe` 扩展 | 电脑侧 npm 构建/安装，当前 1.1.2；不需要 RZ/V2H 交叉编译 |
 
-因此本次可视化改动没有要求重编自研 C++ 插件，但新增包和更新配置仍需正确安装到目标 overlay。
-仓库旧 `install/` 不包含新增可视化包及本次 bringup 修改；不要仅更新 `.foxe` 就认为板端已更新。
+初始显示接入无需重编自研 C++，但当前 NaN 修复需要重编触觉插件；新增包和更新配置也需安装。
+仓库旧 `install/` 不包含新增可视化包、bringup 修改或 NaN 修复；不要仅更新 `.foxe` 就认为板端已更新。
 目标要求 RZ/V2H AArch64 + ROS 2 Jazzy；原触觉包还使用 libgpiod 1.6 API，拒绝直接用 2.x 构建。
 部署时也要核对目标 libgpiod 运行库等依赖，而不只检查插件文件是否存在。
-若评审后接受 C++ 故障处理修改，应使用匹配 Jazzy sysroot 的 xbuild 重编相关依赖并更新产物。
+本轮已接受 C++ 故障处理修改，应使用匹配 Jazzy sysroot 的 xbuild 重编相关依赖并更新产物。
 桌面/Linux 容器的构建成功不能代替目标 ABI、Python 安装路径和启动环境验证。
 
 ## 6. 已报告验证与复现入口
 
 以下来自实现提交的验收记录；本评审文档编写本身没有重新运行这些测试。
 历史 ROS/GUI 手工验收的完整原始日志未归档在仓库中，记录不构成独立证明，评审者可以要求复核。
+当前评审修复的定向验证另见 [PROJECT_STATUS.md](../PROJECT_STATUS.md)；下面的 22 项和主动运动验收是初始版本历史记录。
 
 - 5 项 visualizer 核心测试、8 项模拟模型测试、9 项扩展测试，合计 22 项通过；TypeScript 检查与打包通过。
 - Linux/AArch64 Jazzy 容器构建六包模拟依赖集合；没有重新构建 RZ/V2H 真实 SPI 插件或覆盖旧目标产物。
@@ -131,8 +138,9 @@ npm --prefix foxglove/foxglove_inspire_hand_panels test
 npm --prefix foxglove/foxglove_inspire_hand_panels run typecheck
 ```
 
-ROS 构建、演示和 GUI 步骤见 [Foxglove 使用说明](../foxglove/README.md)。下面的可选检查**会发布模拟触觉和关节命令**，
-仅做初次只读评审时不执行；需要复现时，仅对已确认独立 domain、mock-only URDF 的模拟系统运行：
+ROS 构建、演示和 GUI 步骤见 [Foxglove 使用说明](../foxglove/README.md)。下面的可选检查**只发布模拟触觉数据**，
+包含退出时清零模拟触觉；已删除所有关节命令，关节/TF仅被动观察。只读评审时不执行注入；
+需要复现时，仅对已确认独立 domain、mock-only URDF 的模拟系统运行：
 
 ```bash
 ROS_DOMAIN_ID=77 python3 src/utils/pnc_hand_demo/test/demo_runtime_smoke.py
@@ -142,7 +150,8 @@ ROS_DOMAIN_ID=77 python3 src/utils/pnc_hand_demo/test/demo_runtime_smoke.py
 
 | 触发条件/边界 | 当前行为或待核实点 |
 | --- | --- |
-| 某芯片读取失败、其他芯片继续更新 | 失败芯片保留旧有限值，整条 values 流仍有新时戳；三维节点的 0.5 秒、诊断面板的 2 秒超时均只检测整条流停止，不能证明各芯片正常 |
+| 某芯片读取失败、其他芯片继续更新 | 当前源码当帧将失败芯片所有 raw_i/raw_q/value 置 NaN，其他芯片继续更新；旧 install 插件仍会冻结，必须部署新构建。超时只表示整条流停止，NaN也不是完整硬件健康诊断 |
+| names/values 帧长不符 | 扩展 1.1.2 与 Python 均拒绝该帧；同长度跨代重排不能仅靠长度检查识别，原消息没有共同 generation 字段 |
 | 读取成功但 `raw_i=0` | 原处理逻辑保留上一非零滤波值；应核实零值在传感器协议中的含义，不能直接解释为松手或无触摸 |
 | `auto_tare=true` 且芯片恢复时仍被按住 | 恢复路径会重新 tare，可能把持续触摸当作新零点；需确定保留基线还是显式空载去皮 |
 | 多颗芯片故障，尤其 `recovery_interval_frames=1` | 顺序选择恢复可能不公平；默认 40 不能证明所有配置正确 |
@@ -159,9 +168,9 @@ DTB 变更包含 WS125 的 SDHI0 VccQ 固定 1.8 V、释放 PA0 和 P70/P71 等�
 
 ## 8. 软件收尾与硬件验收的分界
 
-硬件前可推进：定义每芯片有效性/年龄契约及失败显示，确定恢复 tare 策略，统一诊断/3D 量程配置，
-改进恢复公平性与时序，整合真实启动入口，补有针对性的故障测试，并准备匹配目标的构建产物。
-是否修改应由独立评审结论驱动；这些尚未完成，不能以模拟通过替代。
+本轮已实现失败/未采样输出 NaN、移除 smoke 运动命令和异常帧长度检查，并补针对性测试。
+硬件前仍可推进：恢复 tare 策略、诊断/3D 量程配置、恢复公平性与时序、真实统一启动入口，
+以及匹配目标的构建产物。上述剩余事项没有在本轮扩大修复，不能以模拟通过替代硬件验收。
 
 必须有实物/目标信息：最终接线与装配、每区通道对应、真实零点/极性/量程、SPI echo/CRC、电气 CS，
 短时及多点触摸、故障恢复、完整帧耗时和机械手运动同时运行。验收记录应包括 Git 提交、

@@ -1,7 +1,7 @@
 """Strict named-channel decoding and physical-zone color mapping.
 
-Values are relative PNC response, NOT Newtons. Message freshness cannot prove
-device health: the current production hardware can republish frozen values.
+Values are relative PNC response, NOT Newtons. NaN denotes unavailable data.
+Message freshness alone cannot prove device health, particularly with older plugins.
 """
 from __future__ import annotations
 
