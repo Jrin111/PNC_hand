@@ -55,8 +55,20 @@ def main() -> None:
         'spawner controller-manager path is not namespace-derived',
     )
     require(
-        launch_source.count('namespace=node_namespace') == 2,
-        'controller manager and spawner must share the tactile namespace',
+        launch_source.count('namespace=node_namespace') == 3,
+        'robot state publisher, controller manager, and spawner must share the tactile namespace',
+    )
+    require(
+        "package='robot_state_publisher'" in launch_source,
+        'robot_state_publisher is required for the Jazzy robot_description topic',
+    )
+    require(
+        "remappings=[('robot_description', robot_description_topic)]" in launch_source,
+        'controller manager robot_description subscription is not namespace-safe',
+    )
+    require(
+        "'--param-file',\n                controller_config" in launch_source,
+        'broadcaster spawner must receive the controller parameter file',
     )
     compile(launch_source, str(launch_path), 'exec')
 
@@ -113,6 +125,15 @@ def main() -> None:
     require(
         (broadcaster_root / 'LICENSE').is_file(),
         'state_interfaces_broadcaster Apache-2.0 license is missing',
+    )
+
+    bringup_manifest = ElementTree.parse(package_root / 'package.xml').getroot()
+    runtime_dependencies = {
+        element.text for element in bringup_manifest.findall('exec_depend')
+    }
+    require(
+        'robot_state_publisher' in runtime_dependencies,
+        'bringup must declare robot_state_publisher as a runtime dependency',
     )
 
     print('bringup configuration checks passed')

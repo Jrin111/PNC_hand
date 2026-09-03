@@ -1,1 +1,1 @@
-ament_index_python:controller_manager:launch:launch_ros:python3-yaml:ssc_tactile_hand_ros2_control:state_interfaces_broadcaster:xacro
+ament_index_python:controller_manager:launch:launch_ros:python3-yaml:robot_state_publisher:ssc_tactile_hand_ros2_control:state_interfaces_broadcaster:xacro

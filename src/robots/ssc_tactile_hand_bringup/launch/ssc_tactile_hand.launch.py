@@ -122,6 +122,7 @@ def _launch_setup(context: LaunchContext) -> List[Node]:
     if not node_namespace or any(character.isspace() for character in node_namespace):
         raise RuntimeError('namespace must be a non-empty ROS namespace without whitespace')
     controller_manager_path = f'/{node_namespace}/controller_manager'
+    robot_description_topic = f'/{node_namespace}/robot_description'
 
     resolved['cs_lines'] = ','.join(cs_lines)
     xacro_path = os.path.join(
@@ -137,16 +138,24 @@ def _launch_setup(context: LaunchContext) -> List[Node]:
 
     return [
         Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            name='robot_state_publisher',
+            namespace=node_namespace,
+            output='screen',
+            parameters=[robot_description],
+        ),
+        Node(
             package='controller_manager',
             executable='ros2_control_node',
             name='controller_manager',
             namespace=node_namespace,
             output='screen',
             parameters=[
-                robot_description,
                 controller_config,
                 {'update_rate': update_rate},
             ],
+            remappings=[('robot_description', robot_description_topic)],
         ),
         Node(
             package='controller_manager',
@@ -158,6 +167,8 @@ def _launch_setup(context: LaunchContext) -> List[Node]:
                 'tactile_hand_state_broadcaster',
                 '--controller-manager',
                 controller_manager_path,
+                '--param-file',
+                controller_config,
             ],
         ),
     ]

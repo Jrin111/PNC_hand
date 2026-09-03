@@ -1,17 +1,17 @@
 # ssc_tactile_hand_bringup
 
-Minimal ROS 2 bringup for the WS125 RZ/V2H-direct PNC tactile hand. It starts
-only `ros2_control_node` and a `StateInterfacesBroadcaster`; there is no
-mock device, GUI, robot-state publisher, or calibration utility.
+Minimal ROS 2 Jazzy bringup for the WS125 RZ/V2H-direct PNC tactile hand. It
+starts a namespaced `robot_state_publisher`, `ros2_control_node`, and
+`StateInterfacesBroadcaster`; there is no mock device, GUI, or calibration utility.
 
 The hardware topology is one shared SPI6 userspace device plus nine independent
 GPIO chip-select lines. The package exports 54 generic sensors,
 `raa0_ch0` through `raa8_ch5`, with three state interfaces per sensor:
 `raw_i`, `raw_q`, and `value` (162 interfaces total).
 
-## Confirmed default device mapping
+## Configured default device mapping
 
-These defaults come from the WS125 RZ/V2H post-boot SPI/GPIO enumeration:
+These defaults follow the WS125/RZ/V2H device-tree and tactile-board wiring:
 
 | Device | Physical signal | GPIO device | Line offset |
 |---|---|---|---:|
