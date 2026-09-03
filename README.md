@@ -32,9 +32,11 @@ The Foxglove implementation commit is `e5c43263a4517076c60ad469f3b99fc8256eb4e2`
 verify the current PR status; do not assume an unmerged feature is already present on `main`.
 The next two commits clarified that implementation. The later review fixes add failed-chip
 NaN output in the C++ tactile driver, remove motor commands from the demo smoke check, and
-ship extension 1.1.2 with mismatched-frame rejection. All nine ROS packages at repair commit
-`0efb254` now build with the official RZ/V2H Jazzy xbuild sysroot; target-sysroot load checks and
-the two tactile test executables pass. Board deployment and hardware acceptance remain pending.
+ship extension 1.1.2 with mismatched-frame rejection. The subsequent original-package review
+also fixes binary serial configuration and gripper profile width updates, and removes an
+unsupported controller timeout setting. All nine ROS packages at `08e031a` build with the
+official RZ/V2H Jazzy xbuild sysroot. Target-sysroot load checks, tactile tests and focused
+serial/profile regressions pass. Board deployment and hardware acceptance remain pending.
 
 ## What works, and what remains to be established
 
@@ -60,7 +62,8 @@ APIs, launch behavior, and C++ ABI dependencies may not match.
 
 Rebuild changed native source and its affected dependency set with the same RZ/V2H Jazzy
 sysroot. The review fix changes `ssc_tactile_hand_ros2_control`: its old binary must be replaced
-to obtain failed-chip NaN output. Other compatible unchanged binaries can be reused. The
+to obtain failed-chip NaN output. The later serial/profile fixes also require the new
+`inspire_rh56e2_hand_ros2_control` and `dexhand_utils` binaries. The
 checked-in `install/` has not been replaced and is not a build of these fixes.
 
 ## System design
@@ -172,13 +175,15 @@ and post-boot enumeration. The included DTB also assumes the WS125 SDHI0 supply 
 
 ## Packages to install for the Foxglove update
 
-The initial Foxglove implementation left native code unchanged. The subsequent fault-validity
-fix changes the tactile driver C++; rebuild that plugin. Inspire motor control and the state
-broadcaster remain unchanged and their compatible Jazzy/AArch64 binaries can be reused.
+The initial Foxglove implementation left native code unchanged. Later repairs change the tactile
+driver, Inspire serial driver and gripper adapter. Deploy their new xbuild outputs. The state
+broadcaster's source is unchanged; the complete nine-package overlay includes its compatible build.
 
 | Package/component | Required for real hardware display? | This update requires |
 | --- | --- | --- |
 | `ssc_tactile_hand_ros2_control` | Yes, for the repaired fault display | Cross-build and deploy the changed SPI plugin against the matching RZ/V2H Jazzy sysroot; include libgpiod 1.6 runtime |
+| `inspire_rh56e2_hand_ros2_control` | For the preserved real motion path | Deploy the binary-safe serial driver and its updated config |
+| `dexhand_utils` | For gripper/profile controls | Deploy the adapter that republishes the active profile's width limit |
 | `pnc_tactile_visualizer` | Yes | Install the new `ament_python` package, its entry point and mapping files, with target Jazzy/Python dependencies |
 | `inspire_rh56e2_hand_bringup` | Yes, for the documented shared-bridge startup | Reinstall the updated launch/config resources; this package has no native compile target |
 | `pnc_hand_demo` | No; optional simulation | Install the new `ament_python` package only where the demo will run |
@@ -186,17 +191,21 @@ broadcaster remain unchanged and their compatible Jazzy/AArch64 binaries can be 
 | `foxglove/foxglove_inspire_hand_panels` | On the display computer | TypeScript/npm packaging into `.foxe`; extension 1.1.2 is included and does not use xbuild |
 
 The two bringup changes are an optional `launch_foxglove` switch (default `true`) and
-position-only mock joint feedback. The real controller configuration is unchanged. Setting
+position-only mock joint feedback. The later original-package review removes the ineffective
+`command_timeout` field; the position controller still holds its last target while active.
+Stopping command publication does not trigger an automatic stop. Setting
 `launch_foxglove:=false` allows one separately configured bridge to serve the whole system.
 Real startup currently uses separate motion, tactile, visualizer and bridge commands; the
 original motion launch does not automatically start the tactile visualizer.
 
-The official RZ/V2H Jazzy xbuild has now produced all nine packages from `0efb254`, including
+The official RZ/V2H Jazzy xbuild has now produced all nine packages from `08e031a`, including
 the repaired tactile plugin, Python entry points, ROS package index and resources. The new
 overlay is in the separate local `xbuild_review/ros2_ws/install/` workspace; it has not replaced
 the historical repository `install/` or been deployed to a board. See
 [the build record](PROJECT_STATUS.md#rzv2h-sysroot-cross-build) for its location, dependency
 versions and validation. Confirm these dependencies against the actual board image before use.
+The local `pnc-hand-rzv2h-jazzy-08e031a.tar.gz` archive contains the complete overlay, build
+metadata, checksums and extraction/source instructions; its location and hash are in that record.
 
 ## Full build after a native source or ABI change
 

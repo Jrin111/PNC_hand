@@ -102,19 +102,22 @@ bridge 的大写 `.STL` 资源规则见 [Foxglove 使用说明的真实接入部
 | 包/产物 | 本次需要处理什么 |
 | --- | --- |
 | `ssc_tactile_hand_ros2_control` | 故障有效性修复改变 C++，必须用匹配 RZ/V2H Jazzy sysroot 的 xbuild 重编并部署 |
+| `inspire_rh56e2_hand_ros2_control` | 后续旧包审查修复原始字节串口配置和失败清理，须部署新插件 |
+| `dexhand_utils` | 后续修复切换 profile 时发布新宽度上限，须部署新可执行文件 |
 | `pnc_tactile_visualizer` | 真实热力图必需；新增 ament Python 包，安装入口、配置、包索引及目标 ROS/Python 依赖 |
 | `inspire_rh56e2_hand_bringup` | 更新 launch/config 安装文件，获得 `launch_foxglove`；本次无该包 C++ 重编内容 |
 | `pnc_hand_demo` | 仅硬件前演示需要；Python 包，真实模式不启动 |
 | `foxglove_bridge` | 目标环境已有兼容 Jazzy 版本可复用；缺失时补齐对应架构/发行版版本 |
-| 未改的运动/broadcaster/description/dexhand_utils | 在匹配目标 ABI 和依赖的前提下复用既有输出；不是无条件承诺任意镜像可运行 |
+| 未改的 broadcaster/description | 在匹配目标 ABI 和依赖的前提下复用既有输出；完整新 overlay 也包含它们 |
 | `.foxe` 扩展 | 电脑侧 npm 构建/安装，当前 1.1.2；不需要 RZ/V2H 交叉编译 |
 
 初始显示接入无需重编自研 C++，但当前 NaN 修复需要重编触觉插件；新增包和更新配置也需安装。
 仓库旧 `install/` 不包含新增可视化包、bringup 修改或 NaN 修复；不要仅更新 `.foxe` 就认为板端已更新。
 目标要求 RZ/V2H AArch64 + ROS 2 Jazzy；原触觉包还使用 libgpiod 1.6 API，拒绝直接用 2.x 构建。
 部署时也要核对目标 libgpiod 运行库等依赖，而不只检查插件文件是否存在。
-修复提交 `0efb254` 的全部 9 个 ROS 包现已使用官方 RZ/V2H Jazzy sysroot 交叉构建成功，
-并在该 sysroot 内通过定向假总线测试、插件加载与 Python 安装检查。
+修复提交 `0efb254` 及后续旧包修复 `08e031a` 的全部 9 个 ROS 包已使用官方 RZ/V2H Jazzy sysroot 构建，
+并在该 sysroot 内通过假总线、伪终端串口、profile 宽度更新、插件加载与 Python 安装检查。
+位置控制器不支持旧 YAML 的 `command_timeout`；已删除无效参数并澄清实际保持最后目标的行为，未新增停手逻辑。
 环境版本、日志和新产物目录见 [PROJECT_STATUS.md 的交叉构建记录](../PROJECT_STATUS.md#rzv2h-sysroot-cross-build)。
 新 overlay 保存在本机独立 xbuild 工作区，未替换 GitHub 中的旧 `install/`。
 最终设备的 BSP/运行库、实物启动和 SPI 验收仍需核对；sysroot 验证不能代替这些步骤。

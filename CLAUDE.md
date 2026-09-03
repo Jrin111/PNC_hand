@@ -91,7 +91,9 @@ PR 分支是完整仓库快照，包含继承的基础代码；“Files changed�
 起始实现的核对线索：原驱动/broadcaster 的 C++ 未修改；运动 bringup 改了
 `launch_foxglove` 开关及 mock 仅发布 position。这些仍须用提交差异核实，不能直接当作结论。
 后续已授权的评审修复修改了触觉驱动 C++：采集失败/未采样状态输出 NaN；
-修复提交 `0efb254` 已完成独立 RZ/V2H sysroot 构建，记录见 `PROJECT_STATUS.md`，实机部署仍待完成。
+修复提交 `0efb254` 及后续旧包修复 `08e031a` 已完成独立 RZ/V2H sysroot 构建，记录见 `PROJECT_STATUS.md`。
+`08e031a` 还修改了 Inspire 串口原始字节模式/失败清理、夹爪 profile 宽度更新，删除无效 timeout 配置；
+部署必须使用这些新原生输出，实机部署仍待完成。
 smoke 已移除所有运动命令，扩展 1.1.2 增加帧长度检查。不能把起始实现的“未改 C++”套用于当前 HEAD。
 重点回答：新增层是否正确复用原 controller、接口、namespace、QoS、TF 和启动关系？
 是否影响原机械手真实控制？真实数据能否不依赖模拟源到达 Foxglove？
@@ -114,6 +116,8 @@ smoke 已移除所有运动命令，扩展 1.1.2 增加帧长度检查。不能�
   中 `.github/copilot-instructions.md` 和 `.github/skills/arm64-cross-build/SKILL.md`，
   按 skill 使用 `sysroot-rosdep-install`、`arm64-chroot`、`cross-colcon-build`。
   独立 xbuild 工作区使用标准 `build/install/log`；普通 Jazzy 容器的原生构建不等于板端 sysroot 构建。
+  本机 Codex 已安装 `arm64-cross-build` 和 `arm64-ros2-package-conventions`；
+  换电脑时仍须安装/加载同版本 skill，不能假定本机个人配置随 Git 仓库同步。
 
 ## 5. 主对话汇总与维护状态
 

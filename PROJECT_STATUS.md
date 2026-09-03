@@ -19,8 +19,9 @@ these recorded conclusions; documentation updates are not new runtime or hardwar
 
 The subsequent user-authorized review fixes change runtime behavior: failed-chip NaN output
 in the tactile C++ plugin, tactile-only smoke injection, and strict frame lengths in extension
-1.1.2. All nine packages at repair commit `0efb254` have now been built using the official
-RZ/V2H Jazzy sysroot in a separate workspace. Deploy that new overlay with matching target
+1.1.2. The original-package follow-up `08e031a` also repairs binary serial configuration and
+profile width updates, and removes an ineffective timeout setting. All nine packages have been
+built using the official RZ/V2H Jazzy sysroot in a separate workspace. Deploy that new overlay with matching target
 dependencies; the preserved repository `install/` outputs do not include these fixes.
 
 ## Background and objective
@@ -122,6 +123,8 @@ use a separate install prefix; do not overwrite the target artifacts with a desk
 | Package/component | Required action |
 | --- | --- |
 | `ssc_tactile_hand_ros2_control` | Rebuild/deploy the changed C++ plugin with matching RZ/V2H Jazzy xbuild and libgpiod 1.6; old binaries retain the fault freeze |
+| `inspire_rh56e2_hand_ros2_control` | Deploy the new binary-safe serial plugin and updated controller config from `08e031a` |
+| `dexhand_utils` | Deploy the adapter from `08e031a` so profile changes update the displayed width limit |
 | `pnc_tactile_visualizer` | Install the new Python ROS package, mapping files and target Jazzy dependencies |
 | `inspire_rh56e2_hand_bringup` | Reinstall launch/config resources for `launch_foxglove` and position-only mock feedback |
 | `pnc_hand_demo` | Optional Python simulation package; not needed by the real acquisition/display path |
@@ -130,8 +133,9 @@ use a separate install prefix; do not overwrite the target artifacts with a desk
 
 No native driver/broadcaster source changed in the initial Foxglove implementation commit.
 The later review fix changes tactile driver C++, so rebuild that plugin and its affected
-dependency set. The 162 state interface names/types are unchanged; the unchanged Inspire and
-broadcaster binaries can be reused when compatible. Python entry points, package index/resources
+dependency set. The 162 state interface names/types are unchanged. The follow-up also changes
+Inspire serial handling and the gripper adapter; use their new binaries. The unchanged
+broadcaster can be reused when compatible. Python entry points, package index/resources
 and dependencies still need correct installation. A separate RZ/V2H xbuild overlay has now been
 produced; see the build record below. The old repository `install/` remains a historical artifact
 set, not the output of the repaired source.
@@ -288,6 +292,48 @@ This establishes build and load compatibility with the recorded sysroot, plus th
 fake-bus behavior. It does not establish compatibility with an unrecorded board image or
 complete the SPI/DTB/wiring/40 Hz hardware acceptance below.
 
+### Original-package follow-up using the same xbuild environment
+
+- Installed `arm64-cross-build` and `arm64-ros2-package-conventions` into
+  `/Users/jr/.codex/skills/` from toolchain commit `1a020f5`, using the skill installer.
+  Both installed trees match the cloned source, including their referenced files.
+- Independent source checks covered the original serial/SPI plugins, broadcaster, gripper
+  adapter, real launch/controller configuration, 162-channel contract, QoS, TF names and
+  installed resources. The real tactile/display interface remains consistent.
+- `08e031a` fixes two original runtime defects: inherited terminal transformations could
+  corrupt binary hand responses, and profile changes did not update `/gripper_max_width`.
+  Serial configuration now uses raw bytes and cleans up failed opens; profile changes publish
+  the new latched width outside the profile lock. No motion protocol or tactile mapping changed.
+- Removed `command_timeout: 0.5` from both copies of the position controller YAML: Jazzy's
+  position controller does not implement it. While active it retains its last target; stopping
+  publication is not an automatic stop mechanism. This correction changes no runtime policy.
+- All nine packages cross-built successfully again (`log/pnc-cross-build-native-repairs.log`).
+  Final package refreshes are in `log/pnc-serial-final-build.log` (explicit test constructor,
+  no warning) and `log/pnc-adapter-final-build.log` (declared Python test dependencies).
+- Before/after target-sysroot regressions: the old serial plugin fails activation under inherited
+  byte-stripping flags; the new plugin passes real lifecycle/read calls through a PTY, preserves
+  CR/LF/high-bit/XON/XOFF feedback bytes, and closes descriptors after successful/failed activation.
+  Logs: `log/pnc-serial-before.log` and `log/pnc-serial-after.log`.
+  The wrapper does not mount `/dev/pts`; the local `log/pnc_run_serial_test.sh` temporarily mounts
+  a private devpts instance inside `arm64-chroot` and removes it afterward. No toolchain edit.
+- The old adapter switches internally to pinch but never sends the 0.100 m limit. The new one
+  passes 0.120 → 0.100 → 0.120 updates, late-subscriber delivery and an isolated no-command
+  observation. Logs: `log/pnc-profile-width-before.log` and `log/pnc-profile-width-after.log`.
+  The latter also repeats the nine-package relocation/import/three-plugin load check with
+  the new binaries. Both regressions use the installed target programs and no physical hardware.
+- Independent final diff review found no remaining blocking regression in these repairs.
+  The gripper action's elapsed-time feedback/result still does not prove physical arrival;
+  the regular gripper topic remains open loop. Real position feedback must be used on the board.
+- Local deployment archive:
+  `/Users/jr/Documents/ChatGPT/Multiple tactile sensor/xbuild_review/pnc-hand-rzv2h-jazzy-08e031a.tar.gz`
+  (17,638,288 bytes), SHA-256
+  `89c3c48746bda9c78b8e03b0b66b0db92ad59d71c493678c74f7863b73b6b32b`.
+  Contains the complete nine-package `install/`, `BUILD_INFO.json`, `SHA256SUMS`, `DEPLOY.txt`
+  and selected validation logs. All 379 installed regular files were verified against the
+  archive; all four ELF outputs are AArch64. Its staged source matches `08e031a` byte-for-byte.
+  This archive is local only; GitHub contains the source and reproducible build instructions.
+  It does not bundle system/ROS runtime packages or the DTB.
+
 ## Required target acceptance
 
 - [ ] Deploy the current ROS install outputs and DTB to the intended RZ/V2H RDK image.
@@ -380,3 +426,4 @@ recovery state machine and rebuild the plugin.
 | 2026-09-03 | Added CLAUDE.md with the user's main/Explore/Test/Review agent roles, independent architecture review requirements, original-package reading order, focused testing and project-state handoff rules; aligned the review guide with existing user authorization. Documentation only. |
 | 2026-09-03 | Addressed review findings: failed/unmeasured chip states become NaN in the real driver; smoke publishes only simulated tactile input; extension 1.1.2 rejects mismatched frame lengths. Target plugin rebuild/deployment and hardware acceptance remain pending. |
 | 2026-09-03 | Cloned the user-specified xbuild environment and loaded its companion skill. Cross-built all nine packages at `0efb254` with the official RZ/V2H Jazzy sysroot; target-sysroot fake-bus and relocated-install checks passed. New install remains in the separate local xbuild workspace; board deployment and hardware acceptance remain pending. |
+| 2026-09-03 | Installed cross-build/package skills; reviewed the original packages and fixed serial byte preservation/descriptor cleanup plus profile-width publication in `08e031a`. Corrected unsupported timeout configuration, rebuilt the nine-package overlay and passed targeted old/new sysroot regressions. |

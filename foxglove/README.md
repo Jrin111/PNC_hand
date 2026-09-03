@@ -80,7 +80,8 @@ I/Q/value，不依赖模拟节点。硬件采集正常后，经 bridge 即可看
 后的 bringup 安装到与 RZ/V2H Jazzy 匹配的新 overlay。仓库旧 `install/` 不包含
 可视化包或本次新增的 `launch_foxglove` 开关，不能只更新扩展后继续依赖旧产物。
 后续修复还改变了 `ssc_tactile_hand_ros2_control` 的 C++：芯片本轮采集失败时输出 NaN，
-其他芯片继续更新。必须用匹配 RZ/V2H Jazzy 的 xbuild 重编并部署该插件；旧二进制仍会保留故障旧值。
+其他芯片继续更新。当前全部 9 个包已通过匹配 RZ/V2H Jazzy 的 xbuild 构建；应部署新 overlay，
+其中也包含原 Inspire 串口与夹爪 profile 的后续修复。旧二进制仍会保留故障旧值。
 下面是硬件部署完成后的四终端启动方式；串口、SPI/GPIO 接线、映射和量程必须先
 按实物确认。
 
@@ -134,7 +135,7 @@ Foxglove 使用现有扩展和左手布局，连接 `ws://<RZ/V2H的IP>:8765`。
 当前源码接口；本次实际运行验收仍是模拟环境，不代表这四终端真实硬件流程已经验收。
 
 当前驱动源码已改为单芯片采集失败即输出 NaN，令对应区域变灰，其他芯片继续显示。
-旧 `install/` 二进制仍有故障旧值冻结问题，必须重新 xbuild 并部署才能得到修复。
+旧 `install/` 二进制仍有故障旧值冻结问题，必须部署新 xbuild 输出才能得到修复。
 全局故障若导致停播，显示层依靠超时变灰；新鲜消息不等于全部芯片健康。
 成功读取零 I 时的保留策略及恢复 tare 行为仍见 `PROJECT_STATUS.md`。
 
@@ -167,7 +168,8 @@ Foxglove Desktop 的实际界面验收也已完成：54/54 数据接收、三维
 安装的 JS 与包内 JS 一致，刷新 Foxglove 后加载新代码，异常长度帧显示为未知。
 当前 smoke 只向 `/pnc_demo/tactile_values` 发送模拟数据，结束时只清零模拟触觉。
 它被动核对关节反馈和 TF，已移除所有运动指令及主动运动验收；上述 FIST/OPEN 为历史 GUI 验证。
-真实驱动的 NaN 修复与本轮验证记录见根目录 `PROJECT_STATUS.md`，仍需目标重编译及上板验收。
+真实驱动的 NaN 修复和后续旧包修复均已完成目标交叉构建，记录见根目录 `PROJECT_STATUS.md`；
+仍需匹配板端运行依赖、部署及上板验收。当前位置控制器没有“停止发命令 0.5 秒后自动停手”的能力。
 
 ```bash
 PYTHONPATH=src/utils/pnc_tactile_visualizer python3 -m unittest discover \
