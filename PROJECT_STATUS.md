@@ -3,84 +3,150 @@
 Last updated: 2026-09-03
 
 This is the living project context for engineers and Codex sessions taking over the repository.
-Update the progress checklist and change log whenever the source, target image, hardware mapping,
-or validation state changes.
+Update the progress lists and change log whenever source, artifacts, target image, hardware
+mapping, or validation status changes.
 
-## Background
+## Background and objective
 
-The project adds distributed NanoSen PNC tactile sensing to an Inspire RH56E2 dexterous hand.
-Nine RAA2S4704 devices are connected directly to a Renesas RZ/V2H board through one SPI bus and
-nine GPIO chip-select lines. The target ROS 2 stack must operate the existing Inspire hand while
-publishing tactile state from up to 54 electrical channels.
+The objective is one ROS 2 system on the Renesas RZ/V2H RDK that retains the proven Inspire
+RH56E2 serial motion-control path while adding distributed NanoSen PNC tactile sensing. Nine
+RAA2S4704 devices share one SPI bus and use nine independent GPIO chip-select lines. Up to 54
+electrical channels are acquired directly by the RZ/V2H; the ESP32 is not in this tactile path.
 
-## Design
+The intended result is simultaneous hand actuation and tactile publication, followed by a
+verified mapping from the 54 electrical slots to the final 47 physical tactile zones.
+
+## Target and compatibility decision
+
+The project target is ROS 2 Jazzy because the RZ/V2H RDK image used for this work provides Jazzy.
+The checked-in AArch64 plugins/executable were also produced against the RZ/V2H Jazzy userspace.
+This is a runtime compatibility requirement, not a documentation preference: `ros2_control`
+topic/parameter behavior and C++ plugin ABI differ across ROS distributions.
+
+- Source `/opt/ros/jazzy/setup.bash` on the RDK.
+- Do not mix the included binaries with Humble or another ROS distribution.
+- Rebuild the full affected dependency closure with the RZ/V2H Jazzy sysroot after any
+  ABI-dependent C++ or interface change.
+
+## Architecture and design decisions
 
 - Keep actuator control and tactile acquisition in separate ROS 2 control hardware packages.
-  This limits changes to the existing Inspire serial protocol and lets each path be tested
-  independently.
-- Use `ssc_tactile_hand_bringup` to own the target configuration and launch the tactile hardware
-  together with `state_interfaces_broadcaster`.
-- Acquire one complete tactile frame in each control-cycle `read()`. Map six physical channels
-  per device to stable logical sensor names and publish raw I, raw Q, and filtered values.
-- Hold every GPIO chip-select HIGH except during its selected SPI transaction. Validate the RAA
-  response echo and CRC, isolate a failing device after repeated errors, and retry recovery
-  periodically while healthy devices continue to update.
-- Keep the original ROS package names. `PNC_hand` is the repository name; renaming packages would
-  break the included install artifacts and downstream launch/configuration references.
-- Version the target device-tree source and compiled DTB with the ROS packages. The WS125 change
-  fixes SDHI0 VccQ at 1.8 V, releases PA0 for GPIO, removes native SPI SS pins from the SPI pin
-  group, and disables GPT use of P70/P71 so the required GPIO chip selects remain available.
+  Motion uses the root `/controller_manager`; tactile uses `/tactile/controller_manager`.
+- Preserve the existing Inspire hardware interface and its position, velocity, force,
+  force-threshold, and motion-mode behavior. Restore its original bringup, description, meshes,
+  and gripper adapter rather than replacing the motion stack with a tactile-only launch.
+- Acquire one complete tactile frame in each control-cycle `read()`. Map six physical channels per
+  RAA device to stable logical names and export `raw_i`, `raw_q`, and filtered `value` interfaces.
+- Hold every GPIO chip-select HIGH except during its selected SPI transaction. Check the response
+  echo and CRC, isolate repeated per-device failures, and attempt periodic recovery while healthy
+  devices continue to update.
+- Publish the Jazzy `robot_description` topic from a namespaced
+  `robot_state_publisher`, and pass broadcaster parameters through the spawner explicitly.
+- Keep existing ROS package names because the checked-in install outputs and downstream launch
+  references depend on them. `PNC_hand` remains the repository name.
+- Version the target DTS, its patch, and matching DTB beside the ROS packages. The change fixes
+  SDHI0 VccQ at 1.8 V, releases PA0 for GPIO, removes native SPI SS pins from the SPI pin group,
+  and disables GPT use of P70/P71 so the required GPIO chip selects remain available.
 
 ## Components
 
 | Path | Role |
 | --- | --- |
-| `src/robots/inspire_rh56e2_hand_ros2_control` | Inspire actuator position, velocity, force, threshold, and motion-mode interfaces |
+| `src/robots/inspire_rh56e2_hand_ros2_control` | Inspire serial actuator hardware interface and `read()`/`write()` path |
+| `src/robots/inspire_rh56e2_hand_bringup` | Position and trajectory launch, controller configuration, and tests |
+| `src/robots/inspire_rh56e2_hand_description` | Complete left/right URDF, xacro, and mesh assets |
+| `src/utils/dexhand_utils` | Standard gripper-action adapter and grasp-profile mappings |
 | `src/robots/ssc_tactile_hand_ros2_control` | RZ/V2H SPI/GPIO tactile acquisition and processing |
-| `src/robots/ssc_tactile_hand_bringup` | Tactile configuration, URDF/xacro, and launch |
+| `src/robots/ssc_tactile_hand_bringup` | Tactile configuration, xacro, Jazzy launch, and configuration test |
 | `src/utils/state_interfaces_broadcaster` | Pinned broadcaster used for tactile state publication |
-| `install/` | Matching prebuilt AArch64 ROS 2 package outputs |
-| `platform/rzv2h/` | Modified DTS, patch, and matching WS125/RZ/V2H DTB |
+| `install/` | Existing matching ROS 2 Jazzy/AArch64 package outputs |
+| `platform/rzv2h/` | Modified DTS, reproducible patch, and matching WS125/RZ/V2H DTB |
 
-## Current progress
+## Completed repository work
 
-- [x] Implemented the nine-device RAA2S4704 tactile hardware interface.
-- [x] Added strict response checking, CS safety, per-device isolation, and periodic recovery.
-- [x] Added tactile bringup and the required state-interface broadcaster.
-- [x] Included the Inspire RH56E2 control package and its angle/velocity/force `read()` path.
-- [x] Cross-compiled the revised tactile packages for AArch64 and retained the matching outputs.
-- [x] Included the existing matching AArch64 Inspire control output.
+- [x] Implemented direct nine-device RAA2S4704 acquisition with ordered GPIO chip selects.
+- [x] Added response checking, CS safety, per-device isolation, and periodic recovery.
+- [x] Added 54 logical sensors and 162 explicit tactile state interfaces.
+- [x] Restored the complete Inspire motion-control source set: hardware interface, bringup,
+      left/right description and meshes, and `dexhand_utils`.
+- [x] Restored the matching existing Jazzy/AArch64 install outputs for motion and tactile packages.
+- [x] Restored both Inspire position-control and trajectory-control launch paths.
+- [x] Updated the restored Inspire Jazzy launch paths to pass each controller parameter file
+      through its spawner while keeping `robot_description` on the root topic.
+- [x] Fixed the confirmed Jazzy tactile startup blockers: a namespaced
+      `robot_state_publisher` now supplies `robot_description`, and the broadcaster spawner receives
+      its parameter file explicitly.
+- [x] Corrected target setup documentation from Humble to Jazzy.
 - [x] Added the modified RZ/V2H DTS, reproducible patch, and compiled DTB.
-- [x] Completed the available static/unit/build checks.
-- [ ] Deploy the current ROS install outputs and DTB to the target board.
-- [ ] Confirm the target `spidev` node and that the controller's native SS output is electrically
-      safe while GPIO chip selects are used.
-- [ ] Validate echo/CRC behavior on all populated RAA devices.
-- [ ] Measure sustained full-hand acquisition at the selected 40 Hz controller rate.
-- [ ] Confirm the mapping from 54 electrical channel slots to the final 47 physical tactile zones.
-- [ ] Run combined Inspire actuation and tactile acquisition tests on the assembled hand.
+- [x] Completed available file-level consistency, static configuration, protocol, and artifact
+      architecture checks.
 
-## Known design trade-off
+No new cross-compilation was performed for the 2026-09-03 repository completion. The restored
+motion artifacts are the existing outputs, and the accepted tactile startup changes affect only
+launch/configuration metadata rather than compiled C++.
 
-Device recovery currently runs synchronously inside the tactile `read()` path. A recovery attempt
-can temporarily exceed the nominal 25 ms cycle budget because it reinitializes and re-tares a
-device. Healthy acquisition continues afterward, but a later revision may move recovery to an
-incremental or asynchronous state machine if target timing measurements require it.
+## Required target acceptance
 
-## Handoff to another Codex session
+- [ ] Deploy the current ROS install outputs and DTB to the intended RZ/V2H RDK image.
+- [ ] Record the exact RDK/BSP image version and confirm `/opt/ros/jazzy`.
+- [ ] Confirm `/dev/spidev1.0`, `/dev/gpiochip1`, GPIO ownership, and native SS electrical safety
+      after booting the included DTB.
+- [ ] Validate response echo and CRC behavior on every populated RAA device.
+- [ ] Measure normal full-hand acquisition over at least 100 cycles and record average/max cycle
+      time against the 40 Hz / 25 ms target.
+- [ ] Press each finger and palm region and confirm the physical RAA/channel order.
+- [ ] Finalize the mapping from 54 electrical slots to 47 physical tactile zones and add Newton
+      calibration only after hardware data is available.
+- [ ] Run combined Inspire position/trajectory actuation and tactile acquisition tests on the
+      assembled hand.
+
+## Review decisions and deferred changes
+
+An external source review identified six items. Three are accepted and addressed in this update:
+
+1. Jazzy requires `robot_description` on a topic for controller manager startup.
+2. Jazzy controller parameters must be passed to the broadcaster spawner with `--param-file`.
+3. Deployment instructions must use Jazzy rather than Humble.
+
+The following code-level concerns are credible but intentionally not changed yet:
+
+- Stale tactile values currently lack an agreed validity contract. Decide between NaN values,
+  explicit online/age interfaces, or a hardware error policy before changing the interface.
+- Recovery with `auto_tare=true` can re-tare under load. Decide whether recovery preserves the
+  previous baseline or requires an explicit unloaded re-tare.
+- Recovery selection can be unfair when `recovery_interval_frames=1`; the production default is
+  40, but a rotating cursor is appropriate if interval 1 must be supported.
+
+These changes alter runtime semantics and require a new matching AArch64 build. Changing only the
+source while continuing to ship the old plugin would make the repository internally inconsistent.
+
+## Known timing trade-off
+
+Recovery currently runs synchronously inside tactile `read()`. A recovery attempt performs fixed
+initialization delays and may exceed the nominal 25 ms cycle budget, even though healthy
+acquisition resumes afterward. Normal acquisition at 40 Hz has not yet been measured on the
+target. If recovery-time timing must also remain below 25 ms, design an incremental or asynchronous
+recovery state machine and rebuild the plugin.
+
+## Handoff to another computer or Codex session
 
 1. Clone the private repository and read `README.md` and this file first.
-2. Treat `src/` as the source of truth. Do not rename ROS packages without rebuilding every
-   dependent artifact and updating all launch/configuration references.
-3. Do not rebuild merely to prepare a handoff. Rebuild only after source, toolchain, sysroot, or
-   target ABI changes.
-4. Before deploying, verify the DTB and shared-library architecture and record their hashes.
-5. After each meaningful change, update the checklist and append one short entry below containing
-   the date, commit, verification performed, and any new artifact provenance.
+2. Use the RZ/V2H ROS 2 Jazzy environment exactly; do not execute the AArch64 target binaries on
+   the development host.
+3. Treat `src/` as source of truth and `install/` as the currently paired target output. Do not
+   rename ROS packages without rebuilding every dependent artifact and updating all references.
+4. Do not rebuild merely for a handoff. When a compiled source change is accepted, use the
+   Renesas Jazzy xbuild workflow and replace the complete affected dependency set.
+5. Before deployment, record the Git commit, target image/BSP version, and SHA-256 hashes of the
+   DTB and shared libraries.
+6. After each hardware test, append the exact command, configuration, measured result, and any
+   mapping correction to this file.
 
 ## Change log
 
 | Date | Change |
 | --- | --- |
-| 2026-09-03 | Created the private GitHub project structure with four ROS 2 source packages and matching AArch64 install outputs. |
-| 2026-09-03 | Added the modified WS125/RZ/V2H DTS, its patch, the matching DTB, and this living handoff document. |
+| 2026-09-03 | Created the private GitHub project with the tactile source packages and matching AArch64 outputs. |
+| 2026-09-03 | Added the modified WS125/RZ/V2H DTS, patch, compiled DTB, and living handoff document. |
+| 2026-09-03 | Restored Inspire motion bringup, complete hand description/meshes, `dexhand_utils`, and their existing Jazzy/AArch64 install outputs. |
+| 2026-09-03 | Fixed the accepted Jazzy motion/tactile launch issues and documented deferred runtime-policy changes. |
